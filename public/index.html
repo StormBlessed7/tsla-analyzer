@@ -461,7 +461,7 @@ async function fetchNews() {
   const feed = document.getElementById('news-feed');
   try {
     const data = await claudeRequest({
-      model:'claude-sonnet-4-20250514',
+      model:'claude-sonnet-4-5',
       max_tokens:1000,
       tools:[{type:'web_search_20250305',name:'web_search'}],
       system:`You are a financial news aggregator. Search for latest Tesla TSLA news from the past 24-48 hours. Return ONLY a raw JSON array, no markdown, no preamble: [{"headline":"...","source":"...","sentiment":"positive"|"negative"|"neutral","time":"Xh ago","impact":"high"|"medium"|"low"}] — 5 to 6 items.`,
@@ -499,7 +499,7 @@ async function runAnalysis() {
 
   try {
     const data = await claudeRequest({
-      model:'claude-sonnet-4-20250514',
+      model:'claude-sonnet-4-5',
       max_tokens:1000,
       tools:[{type:'web_search_20250305',name:'web_search'}],
       system:`You are an expert TSLA day trader and options analyst. Be direct and specific. Format your response exactly like this:
