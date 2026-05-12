@@ -247,13 +247,49 @@
     font-size: 12px;
     color: var(--text);
     line-height: 1.7;
-    max-height: 260px;
-    overflow-y: auto;
     display: none;
     white-space: pre-wrap;
   }
 
   .ai-output.visible { display: block; }
+
+  .bull-bear-row {
+    display: none;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 12px;
+  }
+
+  .bull-bear-row.visible { display: grid; }
+
+  .bb-card {
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    font-family: -apple-system, sans-serif;
+    font-size: 12px;
+    line-height: 1.6;
+  }
+
+  .bb-card.bull-card {
+    background: rgba(34,197,94,0.07);
+    border: 0.5px solid rgba(34,197,94,0.3);
+  }
+
+  .bb-card.bear-card {
+    background: rgba(239,68,68,0.07);
+    border: 0.5px solid rgba(239,68,68,0.3);
+  }
+
+  .bb-label {
+    font-size: 11px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    font-family: inherit;
+  }
+
+  .bb-card.bull-card .bb-label { color: var(--green); }
+  .bb-card.bear-card .bb-label { color: var(--red); }
+  .bb-text { color: var(--text2); }
 
   @keyframes ldots { 0%{content:'.'} 33%{content:'..'} 66%{content:'...'} }
   .ldots::after { content: '.'; animation: ldots 1s infinite; }
@@ -271,6 +307,7 @@
     .main-area { grid-template-columns: 1fr; }
     .metrics-row { grid-template-columns: repeat(2, 1fr); }
     .side-panel { border-top: 0.5px solid var(--border); }
+    .bull-bear-row.visible { grid-template-columns: 1fr; }
   }
 </style>
 </head>
@@ -347,6 +384,16 @@
     </div>
     <button class="analyze-btn" id="analyze-btn" onclick="runAnalysis()">⚡ RUN FULL AI ANALYSIS</button>
     <div class="ai-output" id="ai-out"></div>
+    <div class="bull-bear-row" id="bull-bear">
+      <div class="bb-card bull-card">
+        <div class="bb-label">🐂 Bulls Say</div>
+        <div class="bb-text" id="bull-text"></div>
+      </div>
+      <div class="bb-card bear-card">
+        <div class="bb-label">🐻 Bears Say</div>
+        <div class="bb-text" id="bear-text"></div>
+      </div>
+    </div>
   </div>
 
   <div class="disclaimer">
@@ -362,6 +409,41 @@ let pos = 'call';
 let newsData = [];
 let runCount = 0;
 let currentTF = '1D';
+let tradeLines = null;
+
+const tradeLinesPlugin = {
+  id: 'tradeLines',
+  afterDraw(chart) {
+    if (!tradeLines) return;
+    const {ctx, chartArea, scales: {y}} = chart;
+    const lines = [
+      {price: tradeLines.entry,  color: '#3b82f6', label: '▶ Entry'},
+      {price: tradeLines.target, color: '#22c55e', label: '▲ Target'},
+      {price: tradeLines.stop,   color: '#ef4444', label: '▼ Stop'},
+    ];
+    lines.forEach(({price, color, label}) => {
+      if (!price || isNaN(price)) return;
+      const yPos = y.getPixelForValue(price);
+      if (yPos < chartArea.top || yPos > chartArea.bottom) return;
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1;
+      ctx.setLineDash([5, 4]);
+      ctx.globalAlpha = 0.85;
+      ctx.beginPath();
+      ctx.moveTo(chartArea.left, yPos);
+      ctx.lineTo(chartArea.right, yPos);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = color;
+      ctx.font = 'bold 9px "SF Mono","Fira Code",monospace';
+      ctx.textAlign = 'right';
+      ctx.fillText(`${label} $${price}`, chartArea.right - 4, yPos - 3);
+      ctx.restore();
+    });
+  }
+};
 
 function setTF(btn, tf) {
   document.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('active'));
@@ -399,6 +481,7 @@ function renderChart(tf) {
 
   chart = new Chart(ctx, {
     type:'line',
+    plugins:[tradeLinesPlugin],
     data:{
       labels,
       datasets:[
@@ -491,6 +574,7 @@ async function runAnalysis() {
   btn.textContent = 'Analyzing TSLA...';
   out.className='ai-output visible';
   out.textContent='Claude is searching live news, analyst calls, and chart signals...';
+  document.getElementById('bull-bear').classList.remove('visible');
 
   const pillText = document.getElementById('pills').innerText;
   const newsCtx = newsData.length>0
@@ -500,9 +584,9 @@ async function runAnalysis() {
   try {
     const data = await claudeRequest({
       model:'claude-sonnet-4-5',
-      max_tokens:1000,
+      max_tokens:1500,
       tools:[{type:'web_search_20250305',name:'web_search'}],
-      system:`You are an expert TSLA day trader and options analyst. Be direct and specific. Format your response exactly like this:
+      system:`You are an expert TSLA day trader and options analyst. Always provide a complete, detailed analysis — even when the signal is WAIT. Format your response EXACTLY as shown below with no extra text before or after:
 
 🎯 SIGNAL: [CALL / PUT / WAIT]
 Confidence: [X%]
@@ -513,7 +597,7 @@ Confidence: [X%]
 • [momentum / trend]
 
 📰 NEWS CATALYST:
-• [most important catalyst and direction]
+• [most important catalyst and its direction]
 • [secondary catalyst]
 
 ⚠️ KEY RISKS:
@@ -526,20 +610,21 @@ Target: $X (+X%)
 Stop: $X (-X%)
 Strike/Exp suggestion: [X strike, 0-1 DTE]
 
-Keep it tight, specific, and actionable for an experienced options trader.`,
+BULL_CASE: [2-3 sentences in plain everyday English, no jargon, explaining why someone buying TSLA today thinks it will go up]
+
+BEAR_CASE: [2-3 sentences in plain everyday English, no jargon, explaining why someone shorting TSLA today thinks it will go down]`,
       messages:[{role:'user',content:`Analyze TSLA for a ${pos.toUpperCase()} position. Today's date: ${new Date().toDateString()}.
 
 Technicals: ${pillText}
 Recent headlines: ${newsCtx}
 
-Search for: latest TSLA news today, Elon Musk statements, analyst price target changes, Tesla delivery updates, macro catalysts (Fed, CPI, SPY direction), options flow or unusual activity. Give full analysis and clear recommendation.`}]
+Search for: latest TSLA news today, Elon Musk statements, analyst price target changes, Tesla delivery updates, macro catalysts (Fed, CPI, SPY direction), options flow or unusual activity. Give a full detailed analysis and clear recommendation.`}]
     });
     const text = data.content.map(i=>i.text||'').filter(Boolean).join('\n');
     out.textContent = text;
 
     const isCall = /signal:\s*call/i.test(text);
     const isPut = /signal:\s*put/i.test(text);
-    const isWait = /signal:\s*wait/i.test(text) || (!isCall && !isPut);
     const confMatch = text.match(/confidence[:\s]+(\d+)/i);
     const conf = confMatch ? parseInt(confMatch[1]) : 60;
 
@@ -553,6 +638,34 @@ Search for: latest TSLA news today, Elon Musk statements, analyst price target c
     fill.className = 'conf-fill '+(isCall&&!isPut?'call':isPut?'put':'neutral');
     fill.style.width = conf+'%';
     document.getElementById('conf-label').textContent=`Confidence: ${conf}% · Analysis #${++runCount} · ${new Date().toLocaleTimeString()}`;
+
+    // Parse entry/target/stop and draw on chart
+    const entryMatch = text.match(/entry:\s*\$?([\d.]+)/i);
+    const targetMatch = text.match(/target:\s*\$?([\d.]+)/i);
+    const stopMatch = text.match(/stop:\s*\$?([\d.]+)/i);
+    if (entryMatch || targetMatch || stopMatch) {
+      tradeLines = {
+        entry:  entryMatch  ? parseFloat(entryMatch[1])  : null,
+        target: targetMatch ? parseFloat(targetMatch[1]) : null,
+        stop:   stopMatch   ? parseFloat(stopMatch[1])   : null,
+      };
+      if (chart) chart.update();
+    }
+
+    // Parse and display bull/bear cases
+    const bullIdx = text.indexOf('BULL_CASE:');
+    const bearIdx = text.indexOf('BEAR_CASE:');
+    const bullText = bullIdx >= 0
+      ? text.slice(bullIdx + 10, bearIdx > bullIdx ? bearIdx : undefined).trim()
+      : '';
+    const bearText = bearIdx >= 0
+      ? text.slice(bearIdx + 10).trim()
+      : '';
+    if (bullText || bearText) {
+      document.getElementById('bull-text').textContent = bullText;
+      document.getElementById('bear-text').textContent = bearText;
+      document.getElementById('bull-bear').classList.add('visible');
+    }
   } catch(e) {
     out.textContent='Analysis failed. Check your API key in Vercel environment variables and try again.';
   }
