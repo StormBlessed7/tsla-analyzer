@@ -537,7 +537,26 @@ async function claudeRequest(body) {
     headers:{'Content-Type':'application/json'},
     body: JSON.stringify(body)
   });
+  if (resp.status === 429) throw new Error('RATE_LIMITED');
+  if (!resp.ok) throw new Error(`API_ERROR_${resp.status}`);
   return resp.json();
+}
+
+function startCooldown(seconds) {
+  const btn = document.getElementById('analyze-btn');
+  btn.disabled = true;
+  let remaining = seconds;
+  btn.textContent = `⏳ Rate limited — wait ${remaining}s`;
+  const iv = setInterval(() => {
+    remaining--;
+    if (remaining <= 0) {
+      clearInterval(iv);
+      btn.disabled = false;
+      btn.textContent = '⚡ REFRESH ANALYSIS';
+    } else {
+      btn.textContent = `⏳ Rate limited — wait ${remaining}s`;
+    }
+  }, 1000);
 }
 
 async function fetchNews() {
@@ -563,7 +582,10 @@ async function fetchNews() {
         </div>
       </div>`).join('');
   } catch(e) {
-    feed.innerHTML='<div style="font-size:11px;color:var(--text3);">News load failed — run Full Analysis to fetch inline.</div>';
+    const msg = e.message === 'RATE_LIMITED'
+      ? 'Rate limited — news will load with your next Full Analysis.'
+      : 'News load failed — run Full Analysis to fetch inline.';
+    feed.innerHTML=`<div style="font-size:11px;color:var(--text3);">${msg}</div>`;
   }
 }
 
@@ -667,7 +689,12 @@ Search for: latest TSLA news today, Elon Musk statements, analyst price target c
       document.getElementById('bull-bear').classList.add('visible');
     }
   } catch(e) {
-    out.textContent='Analysis failed. Check your API key in Vercel environment variables and try again.';
+    if (e.message === 'RATE_LIMITED') {
+      out.textContent = '⏳ Rate limited — the Anthropic API is temporarily throttling requests. The button will re-enable automatically in 60 seconds.';
+      startCooldown(60);
+      return;
+    }
+    out.textContent = 'Analysis failed. Check your API key in Vercel environment variables and try again.';
   }
 
   btn.disabled=false;
@@ -675,7 +702,7 @@ Search for: latest TSLA news today, Elon Musk statements, analyst price target c
 }
 
 renderChart('1D');
-fetchNews();
+setTimeout(fetchNews, 2000);
 </script>
 </body>
 </html>
