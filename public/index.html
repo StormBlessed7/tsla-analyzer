@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TSLA Day Trading Analyzer</title>
+<title>Day Trading Analyzer — TSLA &amp; SPY</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -42,6 +42,40 @@
     background: var(--bg2);
   }
 
+  /* ── Tab bar ── */
+  .tab-bar {
+    display: flex;
+    background: var(--bg);
+    border-bottom: 0.5px solid var(--border2);
+  }
+
+  .tab-btn {
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    padding: 11px 28px;
+    border: none;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -0.5px;
+    background: transparent;
+    color: var(--text3);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .tab-btn:hover { color: var(--text2); }
+
+  .tab-btn.active {
+    color: var(--text);
+    border-bottom-color: var(--blue);
+    background: var(--bg2);
+  }
+
+  /* ── Per-tab content ── */
+  .ticker-tab { display: none; }
+  .ticker-tab.active { display: block; }
+
   .header {
     display: flex;
     align-items: center;
@@ -53,7 +87,7 @@
 
   .ticker-badge { display: flex; align-items: center; gap: 12px; }
 
-  .tsla-label {
+  .ticker-label {
     font-size: 22px;
     font-weight: 700;
     color: var(--text);
@@ -315,83 +349,145 @@
 
 <div class="terminal">
 
-  <div class="header">
-    <div class="ticker-badge">
-      <div class="live-dot"></div>
-      <span class="tsla-label">TSLA</span>
-      <span class="subtitle">NASDAQ · Day Trade Analyzer · Powered by Claude AI</span>
-    </div>
-    <div class="controls">
-      <button class="tf-btn active" onclick="setTF(this,'1D')">1D</button>
-      <button class="tf-btn" onclick="setTF(this,'5D')">5D</button>
-      <button class="tf-btn" onclick="setTF(this,'1M')">1M</button>
-    </div>
+  <div class="tab-bar">
+    <button class="tab-btn active" data-ticker="TSLA" onclick="switchTab('TSLA')">TSLA</button>
+    <button class="tab-btn" data-ticker="SPY" onclick="switchTab('SPY')">SPY</button>
   </div>
 
-  <div class="metrics-row">
-    <div class="metric"><div class="metric-label">Last Price</div><div class="metric-value loading" id="m-price">Loading...</div></div>
-    <div class="metric"><div class="metric-label">Day Change</div><div class="metric-value loading" id="m-change">—</div></div>
-    <div class="metric"><div class="metric-label">Volume</div><div class="metric-value loading" id="m-vol">—</div></div>
-    <div class="metric"><div class="metric-label">IV / Beta</div><div class="metric-value loading" id="m-iv">—</div></div>
-  </div>
-
-  <div class="main-area">
-
-    <div class="chart-panel">
-      <div class="panel-label">Price action + VWAP</div>
-      <div class="chart-wrap">
-        <canvas id="priceChart" role="img" aria-label="Tesla intraday price chart">TSLA intraday price chart</canvas>
+  <!-- ══════════ TSLA TAB ══════════ -->
+  <div class="ticker-tab active" id="tab-TSLA">
+    <div class="header">
+      <div class="ticker-badge">
+        <div class="live-dot"></div>
+        <span class="ticker-label">TSLA</span>
+        <span class="subtitle">NASDAQ · Day Trade Analyzer · Powered by Claude AI</span>
       </div>
-      <div class="panel-label" style="margin-top:10px;">Volume profile</div>
-      <div class="vol-bars" id="volBars"></div>
-      <div class="indicators" id="pills">
-        <span class="pill">RSI: —</span>
-        <span class="pill">MACD: —</span>
-        <span class="pill">VWAP: —</span>
-        <span class="pill">50 EMA: —</span>
-        <span class="pill">BB: —</span>
+      <div class="controls">
+        <button class="tf-btn active" onclick="setTF(this,'1D','TSLA')">1D</button>
+        <button class="tf-btn" onclick="setTF(this,'5D','TSLA')">5D</button>
+        <button class="tf-btn" onclick="setTF(this,'1M','TSLA')">1M</button>
       </div>
     </div>
 
-    <div class="side-panel">
-      <div class="side-section">
-        <div class="section-label">Trade Signal</div>
-        <div class="signal-card">
-          <div class="signal-dir neutral" id="sig-dir">↔ Awaiting Analysis</div>
-          <div class="signal-detail" id="sig-detail">Hit "Run Full Analysis" to get your CALL / PUT recommendation.</div>
-          <div class="conf-bar"><div class="conf-fill neutral" id="conf-fill" style="width:0%"></div></div>
+    <div class="metrics-row">
+      <div class="metric"><div class="metric-label">Last Price</div><div class="metric-value loading" id="m-price-TSLA">Loading...</div></div>
+      <div class="metric"><div class="metric-label">Day Change</div><div class="metric-value loading" id="m-change-TSLA">—</div></div>
+      <div class="metric"><div class="metric-label">Volume</div><div class="metric-value loading" id="m-vol-TSLA">—</div></div>
+      <div class="metric"><div class="metric-label">IV / Beta</div><div class="metric-value loading" id="m-iv-TSLA">—</div></div>
+    </div>
+
+    <div class="main-area">
+      <div class="chart-panel">
+        <div class="panel-label">Price action + VWAP</div>
+        <div class="chart-wrap">
+          <canvas id="priceChart-TSLA" role="img" aria-label="Tesla intraday price chart"></canvas>
         </div>
-        <div style="font-size:10px;color:var(--text3);margin-top:5px;" id="conf-label"></div>
-      </div>
-
-      <div class="side-section" style="flex:1;overflow-y:auto;">
-        <div class="section-label">Live News Sentiment</div>
-        <div id="news-feed">
-          <div style="font-size:11px;color:var(--text3);">Fetching latest TSLA news...</div>
+        <div class="panel-label" style="margin-top:10px;">Volume profile</div>
+        <div class="vol-bars" id="volBars-TSLA"></div>
+        <div class="indicators" id="pills-TSLA">
+          <span class="pill">RSI: —</span><span class="pill">MACD: —</span>
+          <span class="pill">VWAP: —</span><span class="pill">50 EMA: —</span><span class="pill">BB: —</span>
         </div>
       </div>
+      <div class="side-panel">
+        <div class="side-section">
+          <div class="section-label">Trade Signal</div>
+          <div class="signal-card">
+            <div class="signal-dir neutral" id="sig-dir-TSLA">↔ Awaiting Analysis</div>
+            <div class="signal-detail" id="sig-detail-TSLA">Hit "Run Full Analysis" to get your CALL / PUT recommendation.</div>
+            <div class="conf-bar"><div class="conf-fill neutral" id="conf-fill-TSLA" style="width:0%"></div></div>
+          </div>
+          <div style="font-size:10px;color:var(--text3);margin-top:5px;" id="conf-label-TSLA"></div>
+        </div>
+        <div class="side-section" style="flex:1;overflow-y:auto;">
+          <div class="section-label">Live News Sentiment</div>
+          <div id="news-feed-TSLA"><div style="font-size:11px;color:var(--text3);">Fetching latest TSLA news...</div></div>
+        </div>
+      </div>
     </div>
 
+    <div class="analyze-section">
+      <div class="analyze-top">
+        <span class="analyze-label">Position type:</span>
+        <div class="pos-toggle">
+          <button class="pos-btn call active" id="btn-call-TSLA" onclick="setPos('call','TSLA')">CALL</button>
+          <button class="pos-btn put" id="btn-put-TSLA" onclick="setPos('put','TSLA')">PUT</button>
+        </div>
+      </div>
+      <button class="analyze-btn" id="analyze-btn-TSLA" onclick="runAnalysis('TSLA')">⚡ RUN FULL AI ANALYSIS</button>
+      <div class="ai-output" id="ai-out-TSLA"></div>
+      <div class="bull-bear-row" id="bull-bear-TSLA">
+        <div class="bb-card bull-card"><div class="bb-label">🐂 Bulls Say</div><div class="bb-text" id="bull-text-TSLA"></div></div>
+        <div class="bb-card bear-card"><div class="bb-label">🐻 Bears Say</div><div class="bb-text" id="bear-text-TSLA"></div></div>
+      </div>
+    </div>
   </div>
 
-  <div class="analyze-section">
-    <div class="analyze-top">
-      <span class="analyze-label">Position type:</span>
-      <div class="pos-toggle">
-        <button class="pos-btn call active" id="btn-call" onclick="setPos('call')">CALL</button>
-        <button class="pos-btn put" id="btn-put" onclick="setPos('put')">PUT</button>
+  <!-- ══════════ SPY TAB ══════════ -->
+  <div class="ticker-tab" id="tab-SPY">
+    <div class="header">
+      <div class="ticker-badge">
+        <div class="live-dot"></div>
+        <span class="ticker-label">SPY</span>
+        <span class="subtitle">S&amp;P 500 ETF · Macro Analyzer · Powered by Claude AI</span>
+      </div>
+      <div class="controls">
+        <button class="tf-btn active" onclick="setTF(this,'1D','SPY')">1D</button>
+        <button class="tf-btn" onclick="setTF(this,'5D','SPY')">5D</button>
+        <button class="tf-btn" onclick="setTF(this,'1M','SPY')">1M</button>
       </div>
     </div>
-    <button class="analyze-btn" id="analyze-btn" onclick="runAnalysis()">⚡ RUN FULL AI ANALYSIS</button>
-    <div class="ai-output" id="ai-out"></div>
-    <div class="bull-bear-row" id="bull-bear">
-      <div class="bb-card bull-card">
-        <div class="bb-label">🐂 Bulls Say</div>
-        <div class="bb-text" id="bull-text"></div>
+
+    <div class="metrics-row">
+      <div class="metric"><div class="metric-label">Last Price</div><div class="metric-value loading" id="m-price-SPY">Loading...</div></div>
+      <div class="metric"><div class="metric-label">Day Change</div><div class="metric-value loading" id="m-change-SPY">—</div></div>
+      <div class="metric"><div class="metric-label">Volume</div><div class="metric-value loading" id="m-vol-SPY">—</div></div>
+      <div class="metric"><div class="metric-label">VIX</div><div class="metric-value loading" id="m-iv-SPY">—</div></div>
+    </div>
+
+    <div class="main-area">
+      <div class="chart-panel">
+        <div class="panel-label">Price action + VWAP</div>
+        <div class="chart-wrap">
+          <canvas id="priceChart-SPY" role="img" aria-label="SPY intraday price chart"></canvas>
+        </div>
+        <div class="panel-label" style="margin-top:10px;">Volume profile</div>
+        <div class="vol-bars" id="volBars-SPY"></div>
+        <div class="indicators" id="pills-SPY">
+          <span class="pill">RSI: —</span><span class="pill">MACD: —</span>
+          <span class="pill">VWAP: —</span><span class="pill">50 EMA: —</span><span class="pill">BB: —</span>
+        </div>
       </div>
-      <div class="bb-card bear-card">
-        <div class="bb-label">🐻 Bears Say</div>
-        <div class="bb-text" id="bear-text"></div>
+      <div class="side-panel">
+        <div class="side-section">
+          <div class="section-label">Trade Signal</div>
+          <div class="signal-card">
+            <div class="signal-dir neutral" id="sig-dir-SPY">↔ Awaiting Analysis</div>
+            <div class="signal-detail" id="sig-detail-SPY">Hit "Run Full Analysis" to get your CALL / PUT recommendation.</div>
+            <div class="conf-bar"><div class="conf-fill neutral" id="conf-fill-SPY" style="width:0%"></div></div>
+          </div>
+          <div style="font-size:10px;color:var(--text3);margin-top:5px;" id="conf-label-SPY"></div>
+        </div>
+        <div class="side-section" style="flex:1;overflow-y:auto;">
+          <div class="section-label">Live News Sentiment</div>
+          <div id="news-feed-SPY"><div style="font-size:11px;color:var(--text3);">Fetching macro news...</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="analyze-section">
+      <div class="analyze-top">
+        <span class="analyze-label">Position type:</span>
+        <div class="pos-toggle">
+          <button class="pos-btn call active" id="btn-call-SPY" onclick="setPos('call','SPY')">CALL</button>
+          <button class="pos-btn put" id="btn-put-SPY" onclick="setPos('put','SPY')">PUT</button>
+        </div>
+      </div>
+      <button class="analyze-btn" id="analyze-btn-SPY" onclick="runAnalysis('SPY')">⚡ RUN FULL AI ANALYSIS</button>
+      <div class="ai-output" id="ai-out-SPY"></div>
+      <div class="bull-bear-row" id="bull-bear-SPY">
+        <div class="bb-card bull-card"><div class="bb-label">🐂 Bulls Say</div><div class="bb-text" id="bull-text-SPY"></div></div>
+        <div class="bb-card bear-card"><div class="bb-label">🐻 Bears Say</div><div class="bb-text" id="bear-text-SPY"></div></div>
       </div>
     </div>
   </div>
@@ -404,133 +500,179 @@
 
 <script>
 const API = '/api/claude';
-let chart = null;
-let pos = 'call';
-let newsData = [];
-let runCount = 0;
-let currentTF = '1D';
-let tradeLines = null;
 
-const tradeLinesPlugin = {
-  id: 'tradeLines',
-  afterDraw(chart) {
-    if (!tradeLines) return;
-    const {ctx, chartArea, scales: {y}} = chart;
-    const lines = [
-      {price: tradeLines.entry,  color: '#3b82f6', label: '▶ Entry'},
-      {price: tradeLines.target, color: '#22c55e', label: '▲ Target'},
-      {price: tradeLines.stop,   color: '#ef4444', label: '▼ Stop'},
-    ];
-    lines.forEach(({price, color, label}) => {
-      if (!price || isNaN(price)) return;
-      const yPos = y.getPixelForValue(price);
-      if (yPos < chartArea.top || yPos > chartArea.bottom) return;
-      ctx.save();
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 1;
-      ctx.setLineDash([5, 4]);
-      ctx.globalAlpha = 0.85;
-      ctx.beginPath();
-      ctx.moveTo(chartArea.left, yPos);
-      ctx.lineTo(chartArea.right, yPos);
-      ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.globalAlpha = 1;
-      ctx.fillStyle = color;
-      ctx.font = 'bold 9px "SF Mono","Fira Code",monospace';
-      ctx.textAlign = 'right';
-      ctx.fillText(`${label} $${price}`, chartArea.right - 4, yPos - 3);
-      ctx.restore();
-    });
-  }
+const state = {
+  TSLA: { chart: null, newsData: [], tradeLines: null, runCount: 0, tf: '1D', pos: 'call', newsFetched: false },
+  SPY:  { chart: null, newsData: [], tradeLines: null, runCount: 0, tf: '1D', pos: 'call', newsFetched: false },
 };
 
-function setTF(btn, tf) {
-  document.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  currentTF = tf;
-  renderChart(tf);
+let activeTicker = 'TSLA';
+
+function el(id, ticker) {
+  return document.getElementById(`${id}-${ticker}`);
 }
 
-function setPos(p) {
-  pos = p;
-  document.getElementById('btn-call').classList.toggle('active', p==='call');
-  document.getElementById('btn-put').classList.toggle('active', p==='put');
-}
+// ── Tab switching ──────────────────────────────────────────────
+function switchTab(ticker) {
+  if (ticker === activeTicker) return;
+  activeTicker = ticker;
 
-function generateCandles(tf) {
-  const pts = tf==='1D'?78:tf==='5D'?130:200;
-  let base = 245 + Math.random()*30;
-  const labels=[], closes=[];
-  for(let i=0;i<pts;i++){
-    base = Math.max(180, Math.min(380, base + (Math.random()-0.48)*3));
-    closes.push(parseFloat(base.toFixed(2)));
-    labels.push(i%10===0?`${i*(tf==='1D'?5:30)}m`:'');
+  document.querySelectorAll('.ticker-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(`tab-${ticker}`).classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.ticker === ticker)
+  );
+
+  // Lazy-init chart (SPY canvas is hidden until first switch, so size is only valid now)
+  if (!state[ticker].chart) {
+    renderChart(ticker, state[ticker].tf);
   }
-  return {labels,closes};
+
+  // Lazy-fetch news on first visit
+  if (!state[ticker].newsFetched) {
+    state[ticker].newsFetched = true;
+    setTimeout(() => fetchNews(ticker), 500);
+  }
 }
 
-function renderChart(tf) {
-  const ctx = document.getElementById('priceChart').getContext('2d');
-  if(chart) chart.destroy();
-  const {labels,closes} = generateCandles(tf);
+// ── Timeframe + position controls ─────────────────────────────
+function setTF(btn, tf, ticker) {
+  document.getElementById(`tab-${ticker}`)
+    .querySelectorAll('.tf-btn')
+    .forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  state[ticker].tf = tf;
+  renderChart(ticker, tf);
+}
+
+function setPos(p, ticker) {
+  state[ticker].pos = p;
+  el('btn-call', ticker).classList.toggle('active', p === 'call');
+  el('btn-put',  ticker).classList.toggle('active', p === 'put');
+}
+
+// ── Chart rendering ────────────────────────────────────────────
+const CHART_CONFIG = {
+  TSLA: { base: 245, range: 30, vol: 3,   lo: 180, hi: 380 },
+  SPY:  { base: 515, range: 15, vol: 0.9, lo: 490, hi: 560 },
+};
+
+function makeTradeLinesPlugin(ticker) {
+  return {
+    id: `tradeLines-${ticker}`,
+    afterDraw(chart) {
+      const tl = state[ticker].tradeLines;
+      if (!tl) return;
+      const {ctx, chartArea, scales: {y}} = chart;
+      [
+        {price: tl.entry,  color: '#3b82f6', label: '▶ Entry'},
+        {price: tl.target, color: '#22c55e', label: '▲ Target'},
+        {price: tl.stop,   color: '#ef4444', label: '▼ Stop'},
+      ].forEach(({price, color, label}) => {
+        if (!price || isNaN(price)) return;
+        const yPos = y.getPixelForValue(price);
+        if (yPos < chartArea.top || yPos > chartArea.bottom) return;
+        ctx.save();
+        ctx.strokeStyle = color; ctx.lineWidth = 1;
+        ctx.setLineDash([5, 4]); ctx.globalAlpha = 0.85;
+        ctx.beginPath();
+        ctx.moveTo(chartArea.left, yPos); ctx.lineTo(chartArea.right, yPos);
+        ctx.stroke();
+        ctx.setLineDash([]); ctx.globalAlpha = 1;
+        ctx.fillStyle = color;
+        ctx.font = 'bold 9px "SF Mono","Fira Code",monospace';
+        ctx.textAlign = 'right';
+        ctx.fillText(`${label} $${price}`, chartArea.right - 4, yPos - 3);
+        ctx.restore();
+      });
+    }
+  };
+}
+
+function generateCandles(ticker, tf) {
+  const pts = tf==='1D'?78:tf==='5D'?130:200;
+  const {base, range, vol, lo, hi} = CHART_CONFIG[ticker];
+  let price = base + Math.random() * range;
+  const labels = [], closes = [];
+  for (let i = 0; i < pts; i++) {
+    price = Math.max(lo, Math.min(hi, price + (Math.random()-0.48)*vol));
+    closes.push(parseFloat(price.toFixed(2)));
+    labels.push(i%10===0 ? `${i*(tf==='1D'?5:30)}m` : '');
+  }
+  return {labels, closes};
+}
+
+function renderChart(ticker, tf) {
+  const s = state[ticker];
+  const ctx = document.getElementById(`priceChart-${ticker}`).getContext('2d');
+  if (s.chart) s.chart.destroy();
+
+  const {labels, closes} = generateCandles(ticker, tf);
   const last = closes[closes.length-1], first = closes[0];
   const isUp = last >= first;
   const lineColor = isUp ? '#22c55e' : '#ef4444';
-  const vwap = closes.slice(0,Math.floor(closes.length*0.6)).reduce((a,b)=>a+b,0)/Math.floor(closes.length*0.6);
+  const vwapSlice = closes.slice(0, Math.floor(closes.length*0.6));
+  const vwap = vwapSlice.reduce((a,b)=>a+b,0) / vwapSlice.length;
 
-  chart = new Chart(ctx, {
-    type:'line',
-    plugins:[tradeLinesPlugin],
-    data:{
+  s.chart = new Chart(ctx, {
+    type: 'line',
+    plugins: [makeTradeLinesPlugin(ticker)],
+    data: {
       labels,
-      datasets:[
-        {label:'Price',data:closes,borderColor:lineColor,borderWidth:1.5,pointRadius:0,fill:true,backgroundColor:lineColor+'18',tension:0.3},
-        {label:'VWAP',data:Array(closes.length).fill(parseFloat(vwap.toFixed(2))),borderColor:'#f59e0b',borderWidth:1,borderDash:[4,4],pointRadius:0,fill:false}
+      datasets: [
+        {label:'Price', data:closes, borderColor:lineColor, borderWidth:1.5, pointRadius:0, fill:true, backgroundColor:lineColor+'18', tension:0.3},
+        {label:'VWAP',  data:Array(closes.length).fill(parseFloat(vwap.toFixed(2))), borderColor:'#f59e0b', borderWidth:1, borderDash:[4,4], pointRadius:0, fill:false},
       ]
     },
-    options:{
-      responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:false},tooltip:{mode:'index',intersect:false,backgroundColor:'#1a1a1a',borderColor:'rgba(255,255,255,0.1)',borderWidth:1}},
-      scales:{
-        x:{grid:{display:false},ticks:{font:{size:9},color:'#555'}},
-        y:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{font:{size:9},color:'#555',callback:v=>'$'+v}}
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins: {legend:{display:false}, tooltip:{mode:'index',intersect:false,backgroundColor:'#1a1a1a',borderColor:'rgba(255,255,255,0.1)',borderWidth:1}},
+      scales: {
+        x: {grid:{display:false}, ticks:{font:{size:9},color:'#555'}},
+        y: {grid:{color:'rgba(255,255,255,0.04)'}, ticks:{font:{size:9},color:'#555',callback:v=>'$'+v}},
       }
     }
   });
 
-  document.getElementById('m-price').textContent = '$'+last.toFixed(2);
-  document.getElementById('m-price').className = 'metric-value '+(isUp?'up':'down');
-  const ch = (last-first).toFixed(2);
-  const pct = ((last-first)/first*100).toFixed(2);
-  document.getElementById('m-change').textContent = (isUp?'+':'')+ch+' ('+(isUp?'+':'')+pct+'%)';
-  document.getElementById('m-change').className = 'metric-value '+(isUp?'up':'down');
-  document.getElementById('m-vol').textContent = (35+Math.floor(Math.random()*40))+'M';
-  document.getElementById('m-vol').className = 'metric-value';
-  document.getElementById('m-iv').textContent = Math.floor(50+Math.random()*40)+'% / 2.1';
-  document.getElementById('m-iv').className = 'metric-value';
+  const dp = ticker === 'SPY' ? 2 : 2;
+  el('m-price',  ticker).textContent = '$'+last.toFixed(dp);
+  el('m-price',  ticker).className   = 'metric-value '+(isUp?'up':'down');
+  const ch = (last-first).toFixed(dp), pct = ((last-first)/first*100).toFixed(2);
+  el('m-change', ticker).textContent = (isUp?'+':'')+ch+' ('+(isUp?'+':'')+pct+'%)';
+  el('m-change', ticker).className   = 'metric-value '+(isUp?'up':'down');
+
+  if (ticker === 'TSLA') {
+    el('m-vol', ticker).textContent = (35+Math.floor(Math.random()*40))+'M';
+    el('m-iv',  ticker).textContent = Math.floor(50+Math.random()*40)+'% / 2.1';
+  } else {
+    el('m-vol', ticker).textContent = (280+Math.floor(Math.random()*120))+'M';
+    el('m-iv',  ticker).textContent = (12+Math.random()*14).toFixed(1);
+  }
+  el('m-vol', ticker).className = 'metric-value';
+  el('m-iv',  ticker).className = 'metric-value';
 
   const rsi = Math.floor(35+Math.random()*45);
   const macdBull = isUp;
-  document.getElementById('pills').innerHTML = `
+  const emaDP = ticker === 'SPY' ? 2 : 0;
+  el('pills', ticker).innerHTML = `
     <span class="pill ${rsi>60?'bull':rsi<40?'bear':''}">RSI: ${rsi}</span>
     <span class="pill ${macdBull?'bull':'bear'}">MACD: ${macdBull?'Bullish X':'Bearish X'}</span>
     <span class="pill ${last>vwap?'bull':'bear'}">VWAP: ${last>vwap?'Above':'Below'}</span>
-    <span class="pill">50 EMA: $${(vwap-3+Math.random()*6).toFixed(0)}</span>
-    <span class="pill ${rsi>55?'bull':'bear'}">BB: ${rsi>55?'Upper band':'Mid band'}</span>
-  `;
+    <span class="pill">50 EMA: $${(vwap-3+Math.random()*6).toFixed(emaDP)}</span>
+    <span class="pill ${rsi>55?'bull':'bear'}">BB: ${rsi>55?'Upper band':'Mid band'}</span>`;
 
-  const vb = document.getElementById('volBars');
-  vb.innerHTML='';
-  for(let i=0;i<30;i++){
-    const h=10+Math.random()*90;
-    const d=document.createElement('div');
-    d.className='vol-bar'+(h>75?' high':'')+(i===29?' active':'');
-    d.style.height=h+'%';
+  const vb = el('volBars', ticker);
+  vb.innerHTML = '';
+  for (let i=0; i<30; i++) {
+    const h = 10+Math.random()*90;
+    const d = document.createElement('div');
+    d.className = 'vol-bar'+(h>75?' high':'')+(i===29?' active':'');
+    d.style.height = h+'%';
     vb.appendChild(d);
   }
 }
 
+// ── API ────────────────────────────────────────────────────────
 async function claudeRequest(body) {
   const resp = await fetch(API, {
     method:'POST',
@@ -542,8 +684,8 @@ async function claudeRequest(body) {
   return resp.json();
 }
 
-function startCooldown(seconds) {
-  const btn = document.getElementById('analyze-btn');
+function startCooldown(ticker, seconds) {
+  const btn = el('analyze-btn', ticker);
   btn.disabled = true;
   let remaining = seconds;
   btn.textContent = `⏳ Rate limited — wait ${remaining}s`;
@@ -559,20 +701,31 @@ function startCooldown(seconds) {
   }, 1000);
 }
 
-async function fetchNews() {
-  const feed = document.getElementById('news-feed');
+// ── News fetching ──────────────────────────────────────────────
+const NEWS_SYSTEM = {
+  TSLA: `You are a financial news aggregator. Search for the latest Tesla / TSLA news from the past 24-48 hours. Focus on: Tesla deliveries, Elon Musk statements, earnings, product launches, Cybertruck/FSD updates, competition, recalls, regulatory news. Return ONLY a raw JSON array, no markdown, no preamble: [{"headline":"...","source":"...","sentiment":"positive"|"negative"|"neutral","time":"Xh ago","impact":"high"|"medium"|"low"}] — 5 to 6 items.`,
+  SPY:  `You are a financial news aggregator. Search for the latest S&P 500 / macro market news from the past 24-48 hours. Focus on: Fed policy and FOMC statements, CPI/PCE/jobs data, GDP, treasury yields, sector rotation, VIX moves, geopolitical risk, major earnings. Return ONLY a raw JSON array, no markdown, no preamble: [{"headline":"...","source":"...","sentiment":"positive"|"negative"|"neutral","time":"Xh ago","impact":"high"|"medium"|"low"}] — 5 to 6 items.`,
+};
+
+const NEWS_USER = {
+  TSLA: 'Get latest Tesla TSLA stock news for day trading today.',
+  SPY:  'Get latest S&P 500 macro and market-moving news for day trading today.',
+};
+
+async function fetchNews(ticker) {
+  const feed = el('news-feed', ticker);
   try {
     const data = await claudeRequest({
-      model:'claude-sonnet-4-5',
-      max_tokens:1000,
-      tools:[{type:'web_search_20250305',name:'web_search'}],
-      system:`You are a financial news aggregator. Search for latest Tesla TSLA news from the past 24-48 hours. Return ONLY a raw JSON array, no markdown, no preamble: [{"headline":"...","source":"...","sentiment":"positive"|"negative"|"neutral","time":"Xh ago","impact":"high"|"medium"|"low"}] — 5 to 6 items.`,
-      messages:[{role:'user',content:'Get latest Tesla TSLA stock news for day trading today.'}]
+      model: 'claude-sonnet-4-5',
+      max_tokens: 1000,
+      tools: [{type:'web_search_20250305', name:'web_search'}],
+      system: NEWS_SYSTEM[ticker],
+      messages: [{role:'user', content: NEWS_USER[ticker]}]
     });
     const text = data.content.map(i=>i.text||'').join('\n');
-    const s=text.indexOf('['), e=text.lastIndexOf(']');
-    newsData = JSON.parse(text.substring(s,e+1));
-    feed.innerHTML = newsData.map(n=>`
+    const s = text.indexOf('['), e = text.lastIndexOf(']');
+    state[ticker].newsData = JSON.parse(text.substring(s, e+1));
+    feed.innerHTML = state[ticker].newsData.map(n=>`
       <div class="news-item">
         <div class="news-headline">${n.headline}</div>
         <div class="news-meta">
@@ -581,34 +734,17 @@ async function fetchNews() {
           ${n.impact==='high'?'<span style="color:var(--red);font-weight:600;">HIGH IMPACT</span>':''}
         </div>
       </div>`).join('');
-  } catch(e) {
-    const msg = e.message === 'RATE_LIMITED'
+  } catch(err) {
+    const msg = err.message === 'RATE_LIMITED'
       ? 'Rate limited — news will load with your next Full Analysis.'
       : 'News load failed — run Full Analysis to fetch inline.';
-    feed.innerHTML=`<div style="font-size:11px;color:var(--text3);">${msg}</div>`;
+    feed.innerHTML = `<div style="font-size:11px;color:var(--text3);">${msg}</div>`;
   }
 }
 
-async function runAnalysis() {
-  const btn = document.getElementById('analyze-btn');
-  const out = document.getElementById('ai-out');
-  btn.disabled = true;
-  btn.textContent = 'Analyzing TSLA...';
-  out.className='ai-output visible';
-  out.textContent='Claude is searching live news, analyst calls, and chart signals...';
-  document.getElementById('bull-bear').classList.remove('visible');
-
-  const pillText = document.getElementById('pills').innerText;
-  const newsCtx = newsData.length>0
-    ? newsData.map(n=>`"${n.headline}" (${n.sentiment}, ${n.impact} impact)`).join('; ')
-    : 'Search for latest TSLA news.';
-
-  try {
-    const data = await claudeRequest({
-      model:'claude-sonnet-4-5',
-      max_tokens:1500,
-      tools:[{type:'web_search_20250305',name:'web_search'}],
-      system:`You are an expert TSLA day trader and options analyst. Always provide a complete, detailed analysis — even when the signal is WAIT. Format your response EXACTLY as shown below with no extra text before or after:
+// ── Analysis ───────────────────────────────────────────────────
+const ANALYSIS_SYSTEM = {
+  TSLA: pos => `You are an expert TSLA day trader and options analyst. Always provide a complete, detailed analysis — even when the signal is WAIT. Format your response EXACTLY as shown below with no extra text before or after:
 
 🎯 SIGNAL: [CALL / PUT / WAIT]
 Confidence: [X%]
@@ -619,7 +755,7 @@ Confidence: [X%]
 • [momentum / trend]
 
 📰 NEWS CATALYST:
-• [most important catalyst and its direction]
+• [most important Tesla/Elon catalyst and its direction]
 • [secondary catalyst]
 
 ⚠️ KEY RISKS:
@@ -635,74 +771,139 @@ Strike/Exp suggestion: [X strike, 0-1 DTE]
 BULL_CASE: [2-3 sentences in plain everyday English, no jargon, explaining why someone buying TSLA today thinks it will go up]
 
 BEAR_CASE: [2-3 sentences in plain everyday English, no jargon, explaining why someone shorting TSLA today thinks it will go down]`,
-      messages:[{role:'user',content:`Analyze TSLA for a ${pos.toUpperCase()} position. Today's date: ${new Date().toDateString()}.
+
+  SPY: pos => `You are an expert S&P 500 macro trader and options analyst. Always provide a complete, detailed analysis — even when the signal is WAIT. Format your response EXACTLY as shown below with no extra text before or after:
+
+🎯 SIGNAL: [CALL / PUT / WAIT]
+Confidence: [X%]
+
+📊 TECHNICAL SETUP:
+• [key SPY level / pattern / support-resistance]
+• [breadth or sector rotation signal]
+• [momentum / trend vs 50 and 200 EMA]
+
+📰 MACRO CATALYST:
+• [most important macro driver today — Fed, CPI, yields, jobs]
+• [secondary catalyst — earnings, geopolitical, sector news]
+
+⚠️ KEY RISKS:
+• [specific risk 1]
+• [specific risk 2]
+
+🕐 TRADE SETUP (${pos.toUpperCase()}):
+Entry: $X
+Target: $X (+X%)
+Stop: $X (-X%)
+Strike/Exp suggestion: [X strike, 0-1 DTE]
+
+BULL_CASE: [2-3 sentences in plain everyday English, no jargon, explaining why bulls think the broader market goes up today]
+
+BEAR_CASE: [2-3 sentences in plain everyday English, no jargon, explaining why bears think the broader market goes down today]`,
+};
+
+const ANALYSIS_USER = {
+  TSLA: (pos, pillText, newsCtx) =>
+    `Analyze TSLA for a ${pos.toUpperCase()} position. Today's date: ${new Date().toDateString()}.
 
 Technicals: ${pillText}
 Recent headlines: ${newsCtx}
 
-Search for: latest TSLA news today, Elon Musk statements, analyst price target changes, Tesla delivery updates, macro catalysts (Fed, CPI, SPY direction), options flow or unusual activity. Give a full detailed analysis and clear recommendation.`}]
+Search for: latest TSLA news today, Elon Musk statements, analyst price target changes, Tesla delivery updates, FSD/Robotaxi news, macro catalysts (Fed, CPI, SPY direction), options flow or unusual activity. Give a full detailed analysis and clear recommendation.`,
+
+  SPY: (pos, pillText, newsCtx) =>
+    `Analyze SPY for a ${pos.toUpperCase()} position. Today's date: ${new Date().toDateString()}.
+
+Technicals: ${pillText}
+Recent headlines: ${newsCtx}
+
+Search for: latest S&P 500 / market news today, Fed statements or FOMC minutes, CPI/PCE/jobs data releases, treasury yields and dollar index (DXY), VIX direction, market breadth (advance/decline line), leading sector performance, major earnings reports. Give a full detailed macro analysis and clear recommendation.`,
+};
+
+async function runAnalysis(ticker) {
+  const s = state[ticker];
+  const btn = el('analyze-btn', ticker);
+  const out = el('ai-out', ticker);
+  btn.disabled = true;
+  btn.textContent = `Analyzing ${ticker}...`;
+  out.className = 'ai-output visible';
+  out.textContent = 'Claude is searching live news, analyst calls, and chart signals...';
+  el('bull-bear', ticker).classList.remove('visible');
+
+  const pillText = el('pills', ticker).innerText;
+  const newsCtx = s.newsData.length > 0
+    ? s.newsData.map(n=>`"${n.headline}" (${n.sentiment}, ${n.impact} impact)`).join('; ')
+    : `Search for latest ${ticker} news.`;
+
+  try {
+    const data = await claudeRequest({
+      model: 'claude-sonnet-4-5',
+      max_tokens: 1500,
+      tools: [{type:'web_search_20250305', name:'web_search'}],
+      system:   ANALYSIS_SYSTEM[ticker](s.pos),
+      messages: [{role:'user', content: ANALYSIS_USER[ticker](s.pos, pillText, newsCtx)}]
     });
     const text = data.content.map(i=>i.text||'').filter(Boolean).join('\n');
     out.textContent = text;
 
     const isCall = /signal:\s*call/i.test(text);
-    const isPut = /signal:\s*put/i.test(text);
+    const isPut  = /signal:\s*put/i.test(text);
     const confMatch = text.match(/confidence[:\s]+(\d+)/i);
     const conf = confMatch ? parseInt(confMatch[1]) : 60;
 
-    const dir = document.getElementById('sig-dir');
-    if(isCall && !isPut){ dir.className='signal-dir call'; dir.textContent='▲ CALL Signal'; }
-    else if(isPut){ dir.className='signal-dir put'; dir.textContent='▼ PUT Signal'; }
-    else { dir.className='signal-dir neutral'; dir.textContent='↔ Wait / No Trade'; }
+    const dir = el('sig-dir', ticker);
+    if (isCall && !isPut) { dir.className='signal-dir call'; dir.textContent='▲ CALL Signal'; }
+    else if (isPut)       { dir.className='signal-dir put';  dir.textContent='▼ PUT Signal'; }
+    else                  { dir.className='signal-dir neutral'; dir.textContent='↔ Wait / No Trade'; }
 
-    document.getElementById('sig-detail').textContent='See full analysis below.';
-    const fill = document.getElementById('conf-fill');
+    el('sig-detail', ticker).textContent = 'See full analysis below.';
+    const fill = el('conf-fill', ticker);
     fill.className = 'conf-fill '+(isCall&&!isPut?'call':isPut?'put':'neutral');
     fill.style.width = conf+'%';
-    document.getElementById('conf-label').textContent=`Confidence: ${conf}% · Analysis #${++runCount} · ${new Date().toLocaleTimeString()}`;
+    el('conf-label', ticker).textContent =
+      `Confidence: ${conf}% · Analysis #${++s.runCount} · ${new Date().toLocaleTimeString()}`;
 
-    // Parse entry/target/stop and draw on chart
-    const entryMatch = text.match(/entry:\s*\$?([\d.]+)/i);
-    const targetMatch = text.match(/target:\s*\$?([\d.]+)/i);
-    const stopMatch = text.match(/stop:\s*\$?([\d.]+)/i);
-    if (entryMatch || targetMatch || stopMatch) {
-      tradeLines = {
-        entry:  entryMatch  ? parseFloat(entryMatch[1])  : null,
-        target: targetMatch ? parseFloat(targetMatch[1]) : null,
-        stop:   stopMatch   ? parseFloat(stopMatch[1])   : null,
+    // Draw trade levels on chart
+    const entryM  = text.match(/entry:\s*\$?([\d.]+)/i);
+    const targetM = text.match(/target:\s*\$?([\d.]+)/i);
+    const stopM   = text.match(/stop:\s*\$?([\d.]+)/i);
+    if (entryM || targetM || stopM) {
+      s.tradeLines = {
+        entry:  entryM  ? parseFloat(entryM[1])  : null,
+        target: targetM ? parseFloat(targetM[1]) : null,
+        stop:   stopM   ? parseFloat(stopM[1])   : null,
       };
-      if (chart) chart.update();
+      if (s.chart) s.chart.update();
     }
 
-    // Parse and display bull/bear cases
+    // Bull / bear cards
     const bullIdx = text.indexOf('BULL_CASE:');
     const bearIdx = text.indexOf('BEAR_CASE:');
     const bullText = bullIdx >= 0
-      ? text.slice(bullIdx + 10, bearIdx > bullIdx ? bearIdx : undefined).trim()
-      : '';
+      ? text.slice(bullIdx+10, bearIdx > bullIdx ? bearIdx : undefined).trim() : '';
     const bearText = bearIdx >= 0
-      ? text.slice(bearIdx + 10).trim()
-      : '';
+      ? text.slice(bearIdx+10).trim() : '';
     if (bullText || bearText) {
-      document.getElementById('bull-text').textContent = bullText;
-      document.getElementById('bear-text').textContent = bearText;
-      document.getElementById('bull-bear').classList.add('visible');
+      el('bull-text', ticker).textContent = bullText;
+      el('bear-text', ticker).textContent = bearText;
+      el('bull-bear', ticker).classList.add('visible');
     }
-  } catch(e) {
-    if (e.message === 'RATE_LIMITED') {
+  } catch(err) {
+    if (err.message === 'RATE_LIMITED') {
       out.textContent = '⏳ Rate limited — the Anthropic API is temporarily throttling requests. The button will re-enable automatically in 60 seconds.';
-      startCooldown(60);
+      startCooldown(ticker, 60);
       return;
     }
     out.textContent = 'Analysis failed. Check your API key in Vercel environment variables and try again.';
   }
 
-  btn.disabled=false;
-  btn.textContent='⚡ REFRESH ANALYSIS';
+  btn.disabled = false;
+  btn.textContent = '⚡ REFRESH ANALYSIS';
 }
 
-renderChart('1D');
-setTimeout(fetchNews, 2000);
+// ── Init ───────────────────────────────────────────────────────
+renderChart('TSLA', '1D');
+state['TSLA'].newsFetched = true;
+setTimeout(() => fetchNews('TSLA'), 2000);
 </script>
 </body>
 </html>
