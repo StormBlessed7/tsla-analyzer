@@ -508,6 +508,12 @@ const state = {
 
 let activeTicker = 'TSLA';
 
+// ── Finnhub live prices ────────────────────────────────────────
+let finnhubToken = null;
+let finnhubWS = null;
+// prevClose stored per ticker so we can compute day change from WebSocket trades
+const prevClose = { TSLA: null, SPY: null };
+
 function el(id, ticker) {
   return document.getElementById(`${id}-${ticker}`);
 }
@@ -634,12 +640,14 @@ function renderChart(ticker, tf) {
     }
   });
 
-  const dp = ticker === 'SPY' ? 2 : 2;
-  el('m-price',  ticker).textContent = '$'+last.toFixed(dp);
-  el('m-price',  ticker).className   = 'metric-value '+(isUp?'up':'down');
-  const ch = (last-first).toFixed(dp), pct = ((last-first)/first*100).toFixed(2);
-  el('m-change', ticker).textContent = (isUp?'+':'')+ch+' ('+(isUp?'+':'')+pct+'%)';
-  el('m-change', ticker).className   = 'metric-value '+(isUp?'up':'down');
+  // Only use simulated price if Finnhub hasn't delivered a live quote yet
+  if (prevClose[ticker] == null) {
+    el('m-price',  ticker).textContent = '$'+last.toFixed(2);
+    el('m-price',  ticker).className   = 'metric-value '+(isUp?'up':'down');
+    const ch = (last-first).toFixed(2), pct = ((last-first)/first*100).toFixed(2);
+    el('m-change', ticker).textContent = (isUp?'+':'')+ch+' ('+(isUp?'+':'')+pct+'%)';
+    el('m-change', ticker).className   = 'metric-value '+(isUp?'up':'down');
+  }
 
   if (ticker === 'TSLA') {
     el('m-vol', ticker).textContent = (35+Math.floor(Math.random()*40))+'M';
@@ -900,10 +908,103 @@ async function runAnalysis(ticker) {
   btn.textContent = '⚡ REFRESH ANALYSIS';
 }
 
+// ── Finnhub helpers ────────────────────────────────────────────
+function setLiveDotColor(color) {
+  document.querySelectorAll('.live-dot').forEach(d => d.style.background = color);
+}
+
+function updateLivePriceMetrics(ticker, price, change, changePct) {
+  const isUp = change >= 0;
+  const priceEl = el('m-price', ticker);
+  const changeEl = el('m-change', ticker);
+  if (!priceEl || !changeEl) return;
+  priceEl.textContent = '$' + price.toFixed(2);
+  priceEl.className = 'metric-value ' + (isUp ? 'up' : 'down');
+  changeEl.textContent =
+    (isUp ? '+' : '') + change.toFixed(2) +
+    ' (' + (isUp ? '+' : '') + changePct.toFixed(2) + '%)';
+  changeEl.className = 'metric-value ' + (isUp ? 'up' : 'down');
+}
+
+async function fetchFinnhubQuote(ticker) {
+  try {
+    const res = await fetch(
+      `https://finnhub.io/api/v1/quote?symbol=${ticker}&token=${finnhubToken}`
+    );
+    const q = await res.json();
+    // q.c = current, q.d = change, q.dp = % change, q.pc = prev close
+    if (q && q.c) {
+      prevClose[ticker] = q.pc;
+      updateLivePriceMetrics(ticker, q.c, q.d, q.dp);
+    }
+  } catch(e) {
+    // silently fall back to simulated prices
+  }
+}
+
+function connectFinnhubWS() {
+  if (!finnhubToken) return;
+  if (finnhubWS) { try { finnhubWS.close(); } catch(_) {} }
+
+  finnhubWS = new WebSocket(`wss://ws.finnhub.io?token=${finnhubToken}`);
+
+  finnhubWS.addEventListener('open', () => {
+    finnhubWS.send(JSON.stringify({type:'subscribe', symbol:'TSLA'}));
+    finnhubWS.send(JSON.stringify({type:'subscribe', symbol:'SPY'}));
+    setLiveDotColor('#22c55e');
+  });
+
+  finnhubWS.addEventListener('message', event => {
+    let msg;
+    try { msg = JSON.parse(event.data); } catch(_) { return; }
+    if (msg.type !== 'trade' || !msg.data) return;
+
+    // Batch: keep only the latest trade per symbol
+    const latest = {};
+    msg.data.forEach(t => { latest[t.s] = t; });
+
+    Object.values(latest).forEach(trade => {
+      const ticker = trade.s;
+      if (!['TSLA', 'SPY'].includes(ticker)) return;
+      const price = trade.p;
+      const pc = prevClose[ticker];
+      if (pc == null) return;
+      const change = price - pc;
+      const changePct = (change / pc) * 100;
+      updateLivePriceMetrics(ticker, price, change, changePct);
+    });
+  });
+
+  finnhubWS.addEventListener('close', () => {
+    setLiveDotColor('#f59e0b'); // amber = reconnecting
+    setTimeout(connectFinnhubWS, 5000);
+  });
+
+  finnhubWS.addEventListener('error', () => {
+    setLiveDotColor('#ef4444');
+  });
+}
+
+async function initFinnhub() {
+  try {
+    const res = await fetch('/api/finnhub-token');
+    const data = await res.json();
+    if (!data.token) return;
+    finnhubToken = data.token;
+
+    // Fetch quotes for both tickers in parallel, then open one shared WebSocket
+    await Promise.all([fetchFinnhubQuote('TSLA'), fetchFinnhubQuote('SPY')]);
+    connectFinnhubWS();
+  } catch(e) {
+    // Finnhub unavailable — simulated prices remain
+  }
+}
+
 // ── Init ───────────────────────────────────────────────────────
 renderChart('TSLA', '1D');
 state['TSLA'].newsFetched = true;
 setTimeout(() => fetchNews('TSLA'), 2000);
+initFinnhub();
 </script>
 </body>
 </html>
