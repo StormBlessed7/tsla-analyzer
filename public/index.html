@@ -410,6 +410,39 @@ let fearGreedValue = null;
 
 function el(id, t){ return document.getElementById(`${id}-${t}`); }
 
+// ── TECHNICAL INDICATORS ──────────────────────────────────────
+function calcRSI(closes, period=14){
+  if(closes.length < period+1) return 50;
+  let gains=0, losses=0;
+  for(let i=closes.length-period;i<closes.length;i++){
+    const diff=closes[i]-closes[i-1];
+    if(diff>0) gains+=diff; else losses-=diff;
+  }
+  const avgG=gains/period, avgL=losses/period;
+  if(avgL===0) return 100;
+  return 100-100/(1+avgG/avgL);
+}
+function calcEMA(closes, period){
+  if(closes.length<period) return closes[closes.length-1]||0;
+  const k=2/(period+1);
+  let ema=closes.slice(0,period).reduce((a,b)=>a+b,0)/period;
+  for(let i=period;i<closes.length;i++) ema=closes[i]*k+ema*(1-k);
+  return ema;
+}
+function calcMACD(closes){
+  if(closes.length<26) return 0;
+  return calcEMA(closes,12)-calcEMA(closes,26);
+}
+function calcHV(ohlc){
+  if(ohlc.length<5) return null;
+  const closes=ohlc.map(c=>c.close);
+  const returns=[];
+  for(let i=1;i<closes.length;i++) returns.push(Math.log(closes[i]/closes[i-1]));
+  const mean=returns.reduce((a,b)=>a+b,0)/returns.length;
+  const variance=returns.reduce((a,b)=>a+(b-mean)**2,0)/(returns.length-1);
+  return Math.sqrt(variance*252)*100;
+}
+
 // ── TABS ──────────────────────────────────────────────────────
 function switchTab(t){
   if(t === activeTicker) return;
@@ -419,7 +452,7 @@ function switchTab(t){
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.ticker === t));
   if(!state[t].chart) renderChart(t, state[t].tf);
   if(!state[t].newsFetched){ state[t].newsFetched=true; setTimeout(()=>fetchNews(t),500); }
-  if(fearGreedValue !== null) drawFearGreed(t, fearGreedValue);
+  if(fearGreedValue !== null) animateFearGreed(t, fearGreedValue);
   renderOptionsFlow(t);
 }
 function setTF(btn,tf,t){
@@ -434,26 +467,53 @@ function setPos(p,t){
   el('btn-put',t).classList.toggle('active',p==='put');
 }
 
-// ── OHLC GENERATION ───────────────────────────────────────────
+// ── OHLC DATA ─────────────────────────────────────────────────
+async function fetchCandles(t, tf){
+  if(!finnhubToken) return null;
+  const now=Math.floor(Date.now()/1000);
+  let resolution, fromTs;
+  if(tf==='1D'){
+    resolution='5';
+    // From midnight UTC today so we capture full trading session
+    const d=new Date(); d.setUTCHours(0,0,0,0);
+    fromTs=Math.floor(d.getTime()/1000);
+  } else if(tf==='5D'){
+    resolution='30'; fromTs=now-5*24*3600;
+  } else {
+    resolution='D'; fromTs=now-31*24*3600;
+  }
+  try{
+    const r=await fetch(`https://finnhub.io/api/v1/stock/candle?symbol=${t}&resolution=${resolution}&from=${fromTs}&to=${now}&token=${finnhubToken}`);
+    const d=await r.json();
+    if(!d||d.s!=='ok'||!d.c||d.c.length<2) return null;
+    return d.t.map((ts,i)=>({
+      open:parseFloat(d.o[i].toFixed(2)), high:parseFloat(d.h[i].toFixed(2)),
+      low:parseFloat(d.l[i].toFixed(2)),  close:parseFloat(d.c[i].toFixed(2)),
+      volume:d.v[i], time:ts
+    }));
+  } catch(_){ return null; }
+}
+
 function generateOHLC(t, tf){
-  const pts = tf==='1D'?78:tf==='5D'?130:200;
-  const {base,range,vol,lo,hi} = CHART_CFG[t];
-  let p = base + Math.random()*range;
+  const pts=tf==='1D'?78:tf==='5D'?130:200;
+  const {base,range,vol,lo,hi}=CHART_CFG[t];
+  const anchor=prevClose[t]||base+Math.random()*range;
+  let p=anchor;
   const ohlc=[];
   for(let i=0;i<pts;i++){
     const o=p;
     const c=Math.max(lo,Math.min(hi,o+(Math.random()-.48)*vol));
     const h=Math.max(o,c)+Math.random()*vol*.45;
     const l=Math.min(o,c)-Math.random()*vol*.45;
-    ohlc.push({open:parseFloat(o.toFixed(2)),high:parseFloat(h.toFixed(2)),low:parseFloat(l.toFixed(2)),close:parseFloat(c.toFixed(2))});
+    ohlc.push({open:parseFloat(o.toFixed(2)),high:parseFloat(h.toFixed(2)),low:parseFloat(l.toFixed(2)),close:parseFloat(c.toFixed(2)),volume:0});
     p=c;
   }
   return ohlc;
 }
 
 function calcVWAP(ohlc){
-  const slice=ohlc.slice(0,Math.floor(ohlc.length*.6));
-  return slice.reduce((a,b)=>a+(b.high+b.low+b.close)/3,0)/slice.length;
+  const totalVol=ohlc.reduce((a,b)=>a+(b.volume||1),0);
+  return ohlc.reduce((a,b)=>a+((b.high+b.low+b.close)/3)*(b.volume||1),0)/totalVol;
 }
 
 function findSR(ohlc){
@@ -514,20 +574,24 @@ function makeCandlestickPlugin(t){
         ctx.restore();
       }
 
-      // Support / Resistance arrows
+      // Support / Resistance arrows with price labels
       s.srLevels.forEach(lvl=>{
         const lx=x.getPixelForValue(lvl.index);
         const ly2=y.getPixelForValue(lvl.price);
         if(ly2<ca.top||ly2>ca.bottom) return;
+        const isSupport=lvl.type==='support';
         ctx.save();
-        ctx.fillStyle=lvl.type==='support'?'#22c55e':'#ef4444';
+        ctx.fillStyle=isSupport?'#22c55e':'#ef4444';
         ctx.beginPath();
-        if(lvl.type==='support'){
+        if(isSupport){
           ctx.moveTo(lx,ly2+14); ctx.lineTo(lx-5,ly2+6); ctx.lineTo(lx+5,ly2+6);
         } else {
           ctx.moveTo(lx,ly2-14); ctx.lineTo(lx-5,ly2-6); ctx.lineTo(lx+5,ly2-6);
         }
         ctx.closePath(); ctx.fill();
+        ctx.fillStyle=isSupport?'rgba(34,197,94,.8)':'rgba(239,68,68,.8)';
+        ctx.font='7px "SF Mono",monospace'; ctx.textAlign='center';
+        ctx.fillText('$'+lvl.price.toFixed(lvl.price>100?0:2),lx,isSupport?ly2+25:ly2-17);
         ctx.restore();
       });
 
@@ -553,12 +617,15 @@ function makeCandlestickPlugin(t){
 }
 
 // ── RENDER CHART ──────────────────────────────────────────────
-function renderChart(t, tf){
+async function renderChart(t, tf){
   const s=state[t];
   const canvas=document.getElementById(`priceChart-${t}`);
   if(s.chart){ s.chart.destroy(); s.chart=null; }
 
-  const ohlc=generateOHLC(t,tf);
+  // Real Finnhub candle data with fallback to generated
+  let ohlc=await fetchCandles(t,tf);
+  if(!ohlc||ohlc.length<5) ohlc=generateOHLC(t,tf);
+
   s.ohlcData=ohlc;
   s.vwap=calcVWAP(ohlc);
   s.srLevels=findSR(ohlc);
@@ -566,48 +633,61 @@ function renderChart(t, tf){
   const last=ohlc[ohlc.length-1].close, first=ohlc[0].open;
   const isUp=last>=first;
 
-  // Price metrics (only if no live data)
+  // Price metrics — real quote via updateLiveMetrics() takes priority
   if(prevClose[t]==null){
     el('m-price',t).textContent='$'+last.toFixed(2);
     el('m-price',t).className='metric-value '+(isUp?'up':'down');
-    const ch=(last-first).toFixed(2), pct=((last-first)/first*100).toFixed(2);
-    el('m-change',t).textContent=(isUp?'+':'')+ch+' ('+(isUp?'+':'')+pct+'%)';
+    const ch=last-first, pct=(ch/first*100);
+    el('m-change',t).textContent=(ch>=0?'+':'')+ch.toFixed(2)+' ('+(pct>=0?'+':'')+pct.toFixed(2)+'%)';
     el('m-change',t).className='metric-value '+(isUp?'up':'down');
   }
-  if(t==='TSLA'){
-    el('m-vol',t).textContent=(35+Math.floor(Math.random()*40))+'M';
-    el('m-iv',t).textContent=Math.floor(50+Math.random()*40)+'% / 2.1';
-  } else {
-    el('m-vol',t).textContent=(280+Math.floor(Math.random()*120))+'M';
-    el('m-iv',t).textContent=(12+Math.random()*14).toFixed(1);
-  }
-  el('m-vol',t).className='metric-value'; el('m-iv',t).className='metric-value';
 
-  const rsi=Math.floor(35+Math.random()*45);
+  // Real volume from candle data
+  const totalVol=ohlc.reduce((a,b)=>a+(b.volume||0),0);
+  el('m-vol',t).textContent=totalVol>1e6?(totalVol/1e6).toFixed(1)+'M':totalVol>1e3?(totalVol/1e3).toFixed(0)+'K':'–';
+  el('m-vol',t).className='metric-value';
+
+  // Historical volatility as IV proxy
+  const hv=calcHV(ohlc);
+  el('m-iv',t).textContent=hv?hv.toFixed(1)+'% HV':'–';
+  el('m-iv',t).className='metric-value';
+
+  // Real indicator pills from actual price data
+  const closes=ohlc.map(c=>c.close);
+  const rsiVal=Math.round(calcRSI(closes,14));
+  const macd=calcMACD(closes);
+  const ema50=calcEMA(closes,Math.min(50,closes.length));
+
   el('pills',t).innerHTML=`
-    <span class="pill ${rsi>60?'bull':rsi<40?'bear':''}">RSI: ${rsi}</span>
-    <span class="pill ${isUp?'bull':'bear'}">MACD: ${isUp?'Bullish X':'Bearish X'}</span>
+    <span class="pill ${rsiVal>60?'bull':rsiVal<40?'bear':''}">RSI: ${rsiVal}</span>
+    <span class="pill ${macd>0?'bull':'bear'}">MACD: ${macd>0?'Bullish X':'Bearish X'}</span>
     <span class="pill ${last>s.vwap?'bull':'bear'}">VWAP: ${last>s.vwap?'Above':'Below'}</span>
-    <span class="pill">50 EMA: $${(s.vwap-3+Math.random()*6).toFixed(t==='SPY'?1:0)}</span>
-    <span class="pill ${rsi>55?'bull':'bear'}">BB: ${rsi>55?'Upper band':'Mid band'}</span>`;
+    <span class="pill">50 EMA: $${ema50.toFixed(t==='SPY'?1:0)}</span>
+    <span class="pill ${rsiVal>55?'bull':'bear'}">BB: ${rsiVal>55?'Upper band':'Mid band'}</span>`;
 
-  // Volume bars — green/red per candle direction
+  // Volume bars using real volume (or range as proxy)
   const vb=el('volBars',t); vb.innerHTML='';
   const recent=ohlc.slice(-30);
-  const maxR=Math.max(...recent.map(c=>c.high-c.low));
+  const maxMag=Math.max(...recent.map(c=>c.volume||c.high-c.low));
   recent.forEach((bar,i)=>{
     const up=bar.close>=bar.open;
-    const h=Math.max(6,((bar.high-bar.low)/maxR)*90);
+    const mag=(bar.volume||bar.high-bar.low)||1;
+    const h=Math.max(6,(mag/maxMag)*90);
     const d=document.createElement('div');
-    d.className='vol-bar';
-    d.style.height=h+'%';
+    d.className='vol-bar'; d.style.height=h+'%';
     d.style.background=up?'rgba(34,197,94,.45)':'rgba(239,68,68,.35)';
-    if(i===recent.length-1){ d.style.background=up?'rgba(34,197,94,.7)':'rgba(239,68,68,.6)'; }
+    if(i===recent.length-1) d.style.background=up?'rgba(34,197,94,.7)':'rgba(239,68,68,.6)';
     vb.appendChild(d);
   });
 
-  // Create Chart.js scatter (invisible points) + candlestick plugin
-  const labels=ohlc.map((_,i)=>i%10===0?`${i*(tf==='1D'?5:30)}m`:'');
+  // Time-aware x-axis labels
+  const labels=ohlc.map((bar,i)=>{
+    if(!bar.time) return i%10===0?`${i*(tf==='1D'?5:30)}m`:'';
+    const d=new Date(bar.time*1000);
+    if(tf==='1D') return i%6===0?d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:false,timeZone:'America/New_York'}):'';
+    return i%5===0?(d.getMonth()+1)+'/'+d.getDate():'';
+  });
+
   const allP=ohlc.flatMap(c=>[c.high,c.low]);
   const minP=Math.min(...allP)*.9985, maxP=Math.max(...allP)*1.0015;
 
@@ -620,7 +700,7 @@ function renderChart(t, tf){
       plugins:{ legend:{display:false}, tooltip:{enabled:false} },
       scales:{
         x:{ type:'linear', min:-.5, max:ohlc.length-.5, grid:{display:false},
-            ticks:{ font:{size:9}, color:'#555', stepSize:10,
+            ticks:{ font:{size:9}, color:'#555',
               callback:(v)=>{ const i=Math.round(v); return i>=0&&i<labels.length&&labels[i]?labels[i]:''; } } },
         y:{ type:'linear', min:minP, max:maxP,
             grid:{color:'rgba(255,255,255,0.04)'},
@@ -634,8 +714,8 @@ function renderChart(t, tf){
 function fgColor(v){ if(v<=25)return'#ef4444';if(v<=45)return'#f97316';if(v<=55)return'#f59e0b';if(v<=75)return'#84cc16';return'#22c55e'; }
 function fgText(v){ if(v<=25)return'EXTREME FEAR';if(v<=45)return'FEAR';if(v<=55)return'NEUTRAL';if(v<=75)return'GREED';return'EXTREME GREED'; }
 
-function drawFearGreed(t, value){
-  const canvas=document.getElementById(`fg-${t}`);
+function drawFearGreed(ticker, value){
+  const canvas=document.getElementById(`fg-${ticker}`);
   if(!canvas) return;
   const dpr=window.devicePixelRatio||1;
   canvas.width=canvas.offsetWidth*dpr||200*dpr;
@@ -645,40 +725,44 @@ function drawFearGreed(t, value){
   ctx.scale(dpr,dpr);
   const W=canvas.offsetWidth||200, H=90;
   const cx=W/2, cy=H-8, r=Math.min(cx-12,cy-4)*0.88;
-
   ctx.clearRect(0,0,W,H);
-
-  // Arc gradient background
   const segs=100;
   for(let i=0;i<segs;i++){
-    const t0=Math.PI+i*(Math.PI/segs);
-    const t1=t0+Math.PI/segs+.01;
+    const a0=Math.PI+i*(Math.PI/segs);
+    const a1=a0+Math.PI/segs+.01;
     const frac=i/segs;
-    let c;
-    if(frac<.25) c=`rgba(239,68,68,${.4+frac*2})`;
-    else if(frac<.5) c=`rgba(245,158,11,${.5+frac})`;
-    else if(frac<.75) c=`rgba(132,204,22,${.5+frac})`;
-    else c=`rgba(34,197,94,${.5+frac})`;
-    ctx.beginPath(); ctx.arc(cx,cy,r,t0,t1);
-    ctx.strokeStyle=c; ctx.lineWidth=10; ctx.stroke();
+    let col;
+    if(frac<.25)      col=`rgba(239,68,68,${.4+frac*2})`;
+    else if(frac<.5)  col=`rgba(245,158,11,${.5+frac})`;
+    else if(frac<.75) col=`rgba(132,204,22,${.5+frac})`;
+    else              col=`rgba(34,197,94,${.5+frac})`;
+    ctx.beginPath(); ctx.arc(cx,cy,r,a0,a1);
+    ctx.strokeStyle=col; ctx.lineWidth=10; ctx.stroke();
   }
-
-  // Needle
   const angle=Math.PI+(value/100)*Math.PI;
   ctx.save();
   ctx.strokeStyle='#f0f0f0'; ctx.lineWidth=2.5;
-  ctx.beginPath();
-  ctx.moveTo(cx,cy);
+  ctx.beginPath(); ctx.moveTo(cx,cy);
   ctx.lineTo(cx+(r-12)*Math.cos(angle), cy+(r-12)*Math.sin(angle));
   ctx.stroke();
   ctx.beginPath(); ctx.arc(cx,cy,4,0,Math.PI*2);
   ctx.fillStyle='#f0f0f0'; ctx.fill();
   ctx.restore();
-
-  const numEl=document.getElementById(`fg-num-${t}`);
-  const lblEl=document.getElementById(`fg-label-${t}`);
-  if(numEl){ numEl.textContent=value; numEl.style.color=fgColor(value); }
+  const numEl=document.getElementById(`fg-num-${ticker}`);
+  const lblEl=document.getElementById(`fg-label-${ticker}`);
+  if(numEl){ numEl.textContent=Math.round(value); numEl.style.color=fgColor(value); }
   if(lblEl){ lblEl.textContent=fgText(value); lblEl.style.color=fgColor(value); }
+}
+
+function animateFearGreed(ticker, targetValue, duration=1500){
+  const startTime=performance.now();
+  function step(now){
+    const progress=Math.min((now-startTime)/duration,1);
+    const eased=1-Math.pow(1-progress,3);
+    drawFearGreed(ticker, eased*targetValue);
+    if(progress<1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
 }
 
 async function fetchFearGreed(){
@@ -686,9 +770,21 @@ async function fetchFearGreed(){
     const r=await fetch('https://api.alternative.me/fng/?limit=1');
     const d=await r.json();
     fearGreedValue=parseInt(d.data[0].value);
-  } catch(_){ fearGreedValue=Math.floor(35+Math.random()*45); }
-  drawFearGreed('TSLA',fearGreedValue);
-  drawFearGreed('SPY',fearGreedValue);
+  } catch(_){
+    // Calculate from real price action as fallback
+    const s=state['TSLA'];
+    if(s.ohlcData&&s.ohlcData.length>14){
+      const closes=s.ohlcData.map(c=>c.close);
+      const rsi=calcRSI(closes,14);
+      const macd=calcMACD(closes);
+      const momentum=(closes[closes.length-1]-closes[0])/closes[0]*100;
+      fearGreedValue=Math.round(Math.min(100,Math.max(0,rsi*.5+(macd>0?60:40)*.25+(momentum>0?65:35)*.25)));
+    } else {
+      fearGreedValue=45;
+    }
+  }
+  animateFearGreed('TSLA',fearGreedValue);
+  animateFearGreed('SPY',fearGreedValue);
 }
 
 // ── OPTIONS FLOW ──────────────────────────────────────────────
@@ -850,10 +946,10 @@ function connectFinnhub(){
     const latest={};
     msg.data.forEach(tr=>{ latest[tr.s]=tr; });
     Object.values(latest).forEach(tr=>{
-      const t=tr.s; if(!['TSLA','SPY'].includes(t)) return;
-      const pc=prevClose[t]; if(pc==null) return;
+      const sym=tr.s; if(!['TSLA','SPY'].includes(sym)) return;
+      const pc=prevClose[sym]; if(pc==null) return;
       const ch=tr.p-pc, pct=(ch/pc)*100;
-      updateLiveMetrics(t,tr.p,ch,pct);
+      updateLiveMetrics(sym,tr.p,ch,pct);
     });
   });
   finnhubWS.addEventListener('close',()=>{
@@ -1057,16 +1153,20 @@ async function runAnalysis(t){
 }
 
 // ── INIT ──────────────────────────────────────────────────────
-renderChart('TSLA','1D');
-state.TSLA.newsFetched=true;
-updateSessionBadges();
-updateEarnings();
-setInterval(updateSessionBadges, 60000);
-setInterval(updateEarnings, 60000);
-setTimeout(()=>fetchNews('TSLA'), 2000);
-setTimeout(fetchFearGreed, 3500);
-setTimeout(()=>{ renderOptionsFlow('TSLA'); renderOptionsFlow('SPY'); }, 1000);
-initFinnhub();
+async function init(){
+  updateSessionBadges();
+  updateEarnings();
+  setInterval(updateSessionBadges, 60000);
+  setInterval(updateEarnings, 60000);
+  // Load Finnhub token + real quotes first, then render chart with real candle data
+  await initFinnhub();
+  state.TSLA.newsFetched=true;
+  await renderChart('TSLA','1D');
+  setTimeout(()=>fetchNews('TSLA'), 2000);
+  setTimeout(fetchFearGreed, 1000);
+  setTimeout(()=>{ renderOptionsFlow('TSLA'); renderOptionsFlow('SPY'); }, 500);
+}
+init();
 </script>
 </body>
 </html>
