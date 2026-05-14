@@ -596,29 +596,45 @@ function setPos(p,t){
 }
 
 // ── OHLC DATA ─────────────────────────────────────────────────
+function parseCandleResponse(d){
+  if(!d||d.s!=='ok'||!Array.isArray(d.c)||d.c.length<2) return null;
+  return d.t.map((ts,i)=>({
+    open:parseFloat(d.o[i].toFixed(2)), high:parseFloat(d.h[i].toFixed(2)),
+    low:parseFloat(d.l[i].toFixed(2)),  close:parseFloat(d.c[i].toFixed(2)),
+    volume:d.v[i], time:ts
+  }));
+}
+
 async function fetchCandles(t, tf){
   if(!finnhubToken) return null;
   const now=Math.floor(Date.now()/1000);
-  let resolution, fromTs;
+
   if(tf==='1D'){
-    resolution='5';
-    // From midnight UTC today so we capture full trading session
-    const d=new Date(); d.setUTCHours(0,0,0,0);
-    fromTs=Math.floor(d.getTime()/1000);
-  } else if(tf==='5D'){
-    resolution='30'; fromTs=now-5*24*3600;
-  } else {
-    resolution='D'; fromTs=now-31*24*3600;
+    // Walk back up to 5 calendar days to find the most recent trading session
+    for(let daysBack=0; daysBack<=4; daysBack++){
+      const day=new Date();
+      day.setDate(day.getDate()-daysBack);
+      day.setUTCHours(0,0,0,0);
+      const fromTs=Math.floor(day.getTime()/1000);
+      const toTs=fromTs+86400; // one calendar day window
+      try{
+        const r=await fetch(`https://finnhub.io/api/v1/stock/candle?symbol=${t}&resolution=5&from=${fromTs}&to=${toTs}&token=${finnhubToken}`);
+        const d=await r.json();
+        const candles=parseCandleResponse(d);
+        if(candles&&candles.length>=5) return candles;
+      } catch(_){}
+    }
+    return null;
   }
+
+  let resolution, fromTs;
+  if(tf==='5D'){ resolution='30'; fromTs=now-5*24*3600; }
+  else          { resolution='D';  fromTs=now-31*24*3600; }
+
   try{
     const r=await fetch(`https://finnhub.io/api/v1/stock/candle?symbol=${t}&resolution=${resolution}&from=${fromTs}&to=${now}&token=${finnhubToken}`);
     const d=await r.json();
-    if(!d||d.s!=='ok'||!d.c||d.c.length<2) return null;
-    return d.t.map((ts,i)=>({
-      open:parseFloat(d.o[i].toFixed(2)), high:parseFloat(d.h[i].toFixed(2)),
-      low:parseFloat(d.l[i].toFixed(2)),  close:parseFloat(d.c[i].toFixed(2)),
-      volume:d.v[i], time:ts
-    }));
+    return parseCandleResponse(d);
   } catch(_){ return null; }
 }
 
@@ -1089,13 +1105,13 @@ function connectFinnhub(){
 
 async function initFinnhub(){
   try{
-    const r=await fetch('/api/finnhub-token');
+    const r=await fetch('/api/config');
     const d=await r.json();
-    if(!d.token) return;
-    finnhubToken=d.token;
+    if(!d.finnhubKey){ console.warn('No Finnhub key — charts will use simulated data'); return; }
+    finnhubToken=d.finnhubKey;
     await Promise.all([fetchQuote('TSLA'),fetchQuote('SPY')]);
     connectFinnhub();
-  } catch(_){}
+  } catch(e){ console.warn('initFinnhub failed:', e.message); }
 }
 
 // ── NEWS ──────────────────────────────────────────────────────
