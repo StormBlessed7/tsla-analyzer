@@ -514,8 +514,8 @@ const API = '/api/claude';
 const TSLA_EARNINGS = new Date('2026-07-23T20:30:00-04:00');
 
 const CHART_CFG = {
-  TSLA:{ base:245, range:30, vol:2.8, lo:180, hi:380 },
-  SPY: { base:515, range:15, vol:0.9, lo:490, hi:560 },
+  TSLA:{ base:447, range:20, vol:8, lo:200, hi:800 },
+  SPY: { base:562, range:10, vol:3, lo:400, hi:700 },
 };
 
 const state = {
@@ -640,13 +640,14 @@ async function fetchCandles(t, tf){
 
 function generateOHLC(t, tf){
   const pts=tf==='1D'?78:tf==='5D'?130:200;
-  const {base,range,vol,lo,hi}=CHART_CFG[t];
-  const anchor=prevClose[t]||base+Math.random()*range;
+  const {base,range,vol}=CHART_CFG[t];
+  // Anchor to the last known real price; fall back to current base
+  const anchor=prevClose[t]||base+(Math.random()-.5)*range;
   let p=anchor;
   const ohlc=[];
   for(let i=0;i<pts;i++){
     const o=p;
-    const c=Math.max(lo,Math.min(hi,o+(Math.random()-.48)*vol));
+    const c=Math.max(1, o+(Math.random()-.48)*vol);
     const h=Math.max(o,c)+Math.random()*vol*.45;
     const l=Math.min(o,c)-Math.random()*vol*.45;
     ohlc.push({open:parseFloat(o.toFixed(2)),high:parseFloat(h.toFixed(2)),low:parseFloat(l.toFixed(2)),close:parseFloat(c.toFixed(2)),volume:0});
@@ -768,7 +769,16 @@ async function renderChart(t, tf){
 
   // Real Finnhub candle data with fallback to generated
   let ohlc=await fetchCandles(t,tf);
-  if(!ohlc||ohlc.length<5) ohlc=generateOHLC(t,tf);
+  const isRealData=!!(ohlc&&ohlc.length>=5);
+  if(!isRealData) ohlc=generateOHLC(t,tf);
+
+  // Show data-source badge on chart panel label
+  const panelLbl=canvas.closest('.chart-panel')?.querySelector('.panel-label');
+  if(panelLbl){
+    panelLbl.innerHTML=isRealData
+      ?'Candlestick + VWAP &nbsp;<span style="color:var(--green);font-size:9px">● LIVE</span>'
+      :'Candlestick + VWAP &nbsp;<span style="color:var(--amber);font-size:9px">⚠ SIMULATED — Finnhub key not loaded</span>';
+  }
 
   s.ohlcData=ohlc;
   s.vwap=calcVWAP(ohlc);
@@ -1104,14 +1114,28 @@ function connectFinnhub(){
 }
 
 async function initFinnhub(){
-  try{
-    const r=await fetch('/api/config');
-    const d=await r.json();
-    if(!d.finnhubKey){ console.warn('No Finnhub key — charts will use simulated data'); return; }
-    finnhubToken=d.finnhubKey;
-    await Promise.all([fetchQuote('TSLA'),fetchQuote('SPY')]);
-    connectFinnhub();
-  } catch(e){ console.warn('initFinnhub failed:', e.message); }
+  // Try /api/config first (primary), then /api/finnhub-token (legacy fallback)
+  const endpoints=[
+    {url:'/api/config',      key:'finnhubKey'},
+    {url:'/api/finnhub-token',key:'token'},
+  ];
+  for(const ep of endpoints){
+    try{
+      const r=await fetch(ep.url);
+      if(!r.ok) continue;
+      const d=await r.json();
+      const tok=d[ep.key];
+      if(tok){ finnhubToken=tok; break; }
+    } catch(_){}
+  }
+  if(!finnhubToken){
+    console.warn('[Finnhub] No API key returned — charts will show simulated data.\n' +
+      'Set FINNHUB_API_KEY in Vercel → Settings → Environment Variables, then redeploy.');
+    return;
+  }
+  console.log('[Finnhub] Key loaded ✓');
+  await Promise.all([fetchQuote('TSLA'),fetchQuote('SPY')]);
+  connectFinnhub();
 }
 
 // ── NEWS ──────────────────────────────────────────────────────
