@@ -172,6 +172,91 @@ body { font-family:'SF Mono','Fira Code','Consolas',monospace; background:var(--
   .bull-bear-row.visible { grid-template-columns:1fr; }
   .rr-grid { grid-template-columns:repeat(2,1fr); }
 }
+
+/* ─── ASK CLAUDE SLIDING PANEL ──────────────────────────────── */
+.claude-panel {
+  position:fixed; top:0; right:0; bottom:0; width:360px; z-index:1000;
+  background:var(--bg2); border-left:0.5px solid var(--border2);
+  display:flex; flex-direction:column;
+  transform:translateX(100%);
+  transition:transform .32s cubic-bezier(.4,0,.2,1);
+  box-shadow:-8px 0 40px rgba(0,0,0,.55);
+}
+.claude-panel.open { transform:translateX(0); }
+.claude-tab-btn {
+  position:fixed; right:0; top:50%; transform:translateY(-50%); z-index:999;
+  background:var(--blue); color:#fff; border:none; cursor:pointer;
+  font-family:inherit; font-size:10px; font-weight:700; letter-spacing:2px;
+  writing-mode:vertical-rl; padding:18px 9px; border-radius:8px 0 0 8px;
+  transition:background .15s, right .32s cubic-bezier(.4,0,.2,1);
+}
+.claude-tab-btn:hover { background:#2563eb; }
+.claude-tab-btn.shifted { right:360px; }
+.cp-header {
+  padding:14px 16px; border-bottom:0.5px solid var(--border2);
+  display:flex; align-items:center; justify-content:space-between; flex-shrink:0;
+}
+.cp-title { font-size:12px; font-weight:700; letter-spacing:2px; color:var(--blue); }
+.cp-sub { font-size:10px; color:var(--text3); margin-top:2px; }
+.cp-close { background:none; border:none; color:var(--text3); font-size:18px; cursor:pointer; padding:2px 6px; line-height:1; }
+.cp-close:hover { color:var(--text); }
+.chat-messages {
+  flex:1; overflow-y:auto; padding:12px;
+  display:flex; flex-direction:column; gap:8px;
+}
+.chat-msg { max-width:92%; font-size:11px; line-height:1.6; padding:8px 10px; border-radius:6px; }
+.chat-msg.user { align-self:flex-end; background:rgba(59,130,246,.15); border:0.5px solid rgba(59,130,246,.3); color:var(--text); }
+.chat-msg.assistant { align-self:flex-start; background:var(--bg3); border:0.5px solid var(--border2); color:var(--text); font-family:-apple-system,sans-serif; }
+.chat-msg.sys { align-self:center; font-size:10px; color:var(--text3); text-align:center; padding:4px; background:none; border:none; }
+.typing-dots { display:flex; gap:4px; align-items:center; padding:8px 10px; background:var(--bg3); border:0.5px solid var(--border2); border-radius:6px; align-self:flex-start; }
+.typing-dot { width:5px; height:5px; border-radius:50%; background:var(--text3); animation:tdot 1.2s infinite; }
+.typing-dot:nth-child(2){ animation-delay:.2s; }
+.typing-dot:nth-child(3){ animation-delay:.4s; }
+@keyframes tdot { 0%,80%,100%{transform:scale(.7);opacity:.4} 40%{transform:scale(1);opacity:1} }
+.cp-context { font-size:9px; color:var(--text3); padding:4px 14px 8px; font-family:-apple-system,sans-serif; flex-shrink:0; }
+.chat-input-row {
+  padding:10px 12px; border-top:0.5px solid var(--border2);
+  display:flex; gap:8px; background:var(--bg3); flex-shrink:0;
+}
+.chat-input {
+  flex:1; background:var(--bg2); border:0.5px solid var(--border2);
+  border-radius:var(--radius); color:var(--text); font-family:inherit;
+  font-size:11px; padding:7px 10px; resize:none; outline:none; line-height:1.5;
+}
+.chat-input:focus { border-color:var(--blue); }
+.chat-send-btn {
+  background:var(--blue); color:#fff; border:none; border-radius:var(--radius);
+  padding:7px 12px; cursor:pointer; font-family:inherit; font-size:11px; font-weight:700;
+  transition:opacity .15s; flex-shrink:0;
+}
+.chat-send-btn:hover { opacity:.85; }
+.chat-send-btn:disabled { opacity:.35; cursor:not-allowed; }
+
+/* ─── PRE-MARKET INTELLIGENCE PANEL ─────────────────────────── */
+.pm-panel { padding:10px 14px; border-bottom:0.5px solid var(--border); }
+.pm-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+.pm-mode-label { font-size:10px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; }
+.pm-mode-label.pre   { color:var(--amber); }
+.pm-mode-label.power { color:var(--red); animation:blink-r 1s infinite; }
+.pm-mode-label.open  { color:var(--green); }
+.pm-mode-label.after { color:#60a5fa; }
+.pm-mode-label.closed { color:var(--text3); }
+@keyframes blink-r { 0%,100%{opacity:1} 50%{opacity:.25} }
+.pm-refresh { font-size:9px; color:var(--text3); }
+.pm-grid { display:grid; grid-template-columns:1fr 1fr; gap:5px 10px; }
+.pm-cell { font-size:10px; color:var(--text3); }
+.pm-val { display:block; font-size:12px; font-weight:600; color:var(--text); margin-top:1px; }
+.pm-val.up   { color:var(--green); }
+.pm-val.down { color:var(--red); }
+.pm-val.amb  { color:var(--amber); }
+.pm-countdown { font-size:20px; font-weight:700; color:var(--amber); text-align:center; margin:4px 0 6px; letter-spacing:1px; }
+
+@media(max-width:700px){
+  .claude-panel { width:100%; top:auto; height:62vh; border-left:none; border-top:0.5px solid var(--border2); transform:translateY(100%); }
+  .claude-panel.open { transform:translateY(0); }
+  .claude-tab-btn { writing-mode:horizontal-tb; top:auto; bottom:20px; right:20px; border-radius:20px; padding:8px 16px; transform:none; }
+  .claude-tab-btn.shifted { right:20px; bottom:calc(62vh + 12px); }
+}
 </style>
 </head>
 <body>
@@ -234,6 +319,13 @@ body { font-family:'SF Mono','Fira Code','Consolas',monospace; background:var(--
             <div class="conf-bar"><div class="conf-fill neutral" id="conf-fill-TSLA" style="width:0%"></div></div>
           </div>
           <div style="font-size:10px;color:var(--text3);margin-top:5px" id="conf-label-TSLA"></div>
+        </div>
+        <div class="pm-panel" id="pm-panel-TSLA">
+          <div class="pm-header">
+            <div class="pm-mode-label closed" id="pm-label-TSLA">Market Status</div>
+            <div class="pm-refresh" id="pm-refresh-TSLA"></div>
+          </div>
+          <div id="pm-content-TSLA"><div style="font-size:10px;color:var(--text3)">Loading market data…</div></div>
         </div>
         <div class="side-section" style="flex:1;overflow-y:auto">
           <div class="section-label">Live News Sentiment</div>
@@ -337,6 +429,13 @@ body { font-family:'SF Mono','Fira Code','Consolas',monospace; background:var(--
           </div>
           <div style="font-size:10px;color:var(--text3);margin-top:5px" id="conf-label-SPY"></div>
         </div>
+        <div class="pm-panel" id="pm-panel-SPY">
+          <div class="pm-header">
+            <div class="pm-mode-label closed" id="pm-label-SPY">Market Status</div>
+            <div class="pm-refresh" id="pm-refresh-SPY"></div>
+          </div>
+          <div id="pm-content-SPY"><div style="font-size:10px;color:var(--text3)">Loading market data…</div></div>
+        </div>
         <div class="side-section" style="flex:1;overflow-y:auto">
           <div class="section-label">Live News Sentiment</div>
           <div id="news-feed-SPY"><div style="font-size:11px;color:var(--text3)">Fetching macro news…</div></div>
@@ -388,6 +487,26 @@ body { font-family:'SF Mono','Fira Code','Consolas',monospace; background:var(--
   </div>
 
   <div class="disclaimer">⚠️ For informational purposes only. Not financial advice. Options trading involves significant risk. Always manage your own risk.</div>
+</div>
+
+<!-- ── ASK CLAUDE SLIDING PANEL ── -->
+<button class="claude-tab-btn" id="claude-tab-btn" onclick="toggleClaudePanel()">ASK CLAUDE</button>
+<div class="claude-panel" id="claude-panel">
+  <div class="cp-header">
+    <div>
+      <div class="cp-title">ASK CLAUDE</div>
+      <div class="cp-sub" id="cp-ticker-label">TSLA · Day Trade Analyzer</div>
+    </div>
+    <button class="cp-close" onclick="toggleClaudePanel()">✕</button>
+  </div>
+  <div class="chat-messages" id="chat-messages">
+    <div class="chat-msg sys">No messages yet. Ask me anything about the trade.</div>
+  </div>
+  <div class="cp-context" id="cp-context">Context loads after first quote refresh.</div>
+  <div class="chat-input-row">
+    <textarea class="chat-input" id="chat-input" rows="2" placeholder="Ask about entry, chart pattern, risk…" onkeydown="chatKeyDown(event)"></textarea>
+    <button class="chat-send-btn" id="chat-send-btn" onclick="sendChatMessage()">Send</button>
+  </div>
 </div>
 
 <script>
@@ -454,6 +573,15 @@ function switchTab(t){
   if(!state[t].newsFetched){ state[t].newsFetched=true; setTimeout(()=>fetchNews(t),500); }
   if(fearGreedValue !== null) animateFearGreed(t, fearGreedValue);
   renderOptionsFlow(t);
+  // Restore Ask Claude panel state for this ticker
+  const panel = document.getElementById('claude-panel');
+  const tabBtn = document.getElementById('claude-tab-btn');
+  const isOpen = chatState[t].open;
+  panel.classList.toggle('open', isOpen);
+  tabBtn.classList.toggle('shifted', isOpen);
+  document.getElementById('cp-ticker-label').textContent = `${t} · ${t==='TSLA'?'Day Trade':'S&P 500 ETF'} Analyzer`;
+  renderChatHistory(t);
+  updateChatContextChip(t);
 }
 function setTF(btn,tf,t){
   document.getElementById(`tab-${t}`).querySelectorAll('.tf-btn').forEach(b=>b.classList.remove('active'));
@@ -1152,6 +1280,272 @@ async function runAnalysis(t){
   btn.disabled=false; btn.textContent='⚡ REFRESH ANALYSIS';
 }
 
+// ── ASK CLAUDE PANEL ──────────────────────────────────────────
+const chatState = {
+  TSLA:{ history:[], open:false },
+  SPY: { history:[], open:false },
+};
+
+function escHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>'); }
+
+function toggleClaudePanel(){
+  const panel=document.getElementById('claude-panel');
+  const tabBtn=document.getElementById('claude-tab-btn');
+  const nowOpen=!panel.classList.contains('open');
+  panel.classList.toggle('open',nowOpen);
+  tabBtn.classList.toggle('shifted',nowOpen);
+  chatState[activeTicker].open=nowOpen;
+  if(nowOpen){
+    renderChatHistory(activeTicker);
+    updateChatContextChip(activeTicker);
+    setTimeout(()=>document.getElementById('chat-input').focus(),350);
+  }
+}
+
+function renderChatHistory(t){
+  const msgs=chatState[t].history;
+  const container=document.getElementById('chat-messages');
+  if(!container) return;
+  if(!msgs.length){
+    container.innerHTML=`<div class="chat-msg sys">No messages yet. Ask me anything about ${t}.</div>`;
+    return;
+  }
+  container.innerHTML=msgs.map(m=>`<div class="chat-msg ${m.role}">${escHtml(m.content)}</div>`).join('');
+  container.scrollTop=container.scrollHeight;
+}
+
+function updateChatContextChip(t){
+  const chip=document.getElementById('cp-context'); if(!chip) return;
+  const sigEl=document.getElementById(`sig-dir-${t}`);
+  const priceEl=document.getElementById(`m-price-${t}`);
+  const mode=getMarketMode();
+  const modeLabel={pre:'Pre-Market',power:'Power Hour',open:'Market Open',after:'After Hours',closed:'Closed'}[mode]||mode;
+  chip.textContent=`Context: ${t} @ ${priceEl?.textContent||'–'} · ${sigEl?.textContent||'No signal'} · ${modeLabel}`;
+}
+
+async function sendChatMessage(){
+  const input=document.getElementById('chat-input');
+  const sendBtn=document.getElementById('chat-send-btn');
+  const text=input.value.trim(); if(!text) return;
+  const t=activeTicker;
+  const s=state[t];
+  input.value=''; sendBtn.disabled=true;
+
+  chatState[t].history.push({role:'user',content:text});
+  // Keep last 10 messages (5 pairs)
+  if(chatState[t].history.length>10) chatState[t].history=chatState[t].history.slice(-10);
+  renderChatHistory(t);
+
+  const container=document.getElementById('chat-messages');
+  const typingEl=document.createElement('div');
+  typingEl.className='typing-dots';
+  typingEl.innerHTML='<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>';
+  container.appendChild(typingEl); container.scrollTop=container.scrollHeight;
+
+  // Build full context
+  const priceEl=document.getElementById(`m-price-${t}`);
+  const changeEl=document.getElementById(`m-change-${t}`);
+  const pillsEl=document.getElementById(`pills-${t}`);
+  const sigEl=document.getElementById(`sig-dir-${t}`);
+  const analysisEl=document.getElementById(`analysis-cards-${t}`);
+  const newsSnippet=s.newsData.slice(0,3).map(n=>`"${n.headline}" (${n.sentiment})`).join('; ')||'Not loaded';
+  const tradeCtx=s.tradeLines?`Entry:$${s.tradeLines.entry} TP:$${s.tradeLines.target} SL:$${s.tradeLines.stop}`:'No trade lines set';
+  const mode=getMarketMode();
+
+  const sysCtx=`You are an expert ${t==='TSLA'?'TSLA':'SPY/S&P 500'} day trader and options analyst. Answer concisely (2-4 sentences unless detail is requested). Current context:
+Ticker: ${t} | Price: ${priceEl?.textContent||'–'} | Change: ${changeEl?.textContent||'–'}
+Session: ${mode} | Signal: ${sigEl?.textContent||'Awaiting'}
+Indicators: ${pillsEl?.innerText||'–'}
+Trade lines: ${tradeCtx}
+Recent news: ${newsSnippet}
+Time: ${new Date().toLocaleString('en-US',{timeZone:'America/New_York'})} ET
+You have access to real-time web search. Use it if the user asks about live prices, news, or current events.`;
+
+  // Last 4 exchanges for API context (skip last user msg which we send separately)
+  const apiHistory=chatState[t].history.slice(-9,-1).map(m=>({role:m.role==='assistant'?'assistant':'user',content:m.content}));
+
+  try{
+    const d=await claudeRequest({
+      model:'claude-sonnet-4-5', max_tokens:500,
+      tools:[{type:'web_search_20250305',name:'web_search'}],
+      system:sysCtx,
+      messages:[...apiHistory,{role:'user',content:text}]
+    });
+    const reply=d.content.map(i=>i.text||'').filter(Boolean).join('\n').trim();
+    chatState[t].history.push({role:'assistant',content:reply||'(No response)'});
+  } catch(e){
+    const err=e.message==='RATE_LIMITED'?'⏳ Rate limited. Try again in a moment.':'⚠️ Error — check API key.';
+    chatState[t].history.push({role:'assistant',content:err});
+  }
+  if(chatState[t].history.length>10) chatState[t].history=chatState[t].history.slice(-10);
+  typingEl.remove();
+  renderChatHistory(t);
+  sendBtn.disabled=false;
+  updateChatContextChip(t);
+}
+
+function chatKeyDown(e){
+  if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); sendChatMessage(); }
+}
+
+// ── MARKET MODE & PRE-MARKET INTELLIGENCE ─────────────────────
+function getMarketMode(){
+  const et=new Date().toLocaleString('en-US',{timeZone:'America/New_York',hour:'2-digit',minute:'2-digit',hour12:false});
+  const [h,m]=et.split(':').map(Number);
+  const mins=h*60+m;
+  if(mins>=6*60&&mins<9*60+30)  return 'pre';
+  if(mins>=9*60+30&&mins<10*60) return 'power';
+  if(mins>=10*60&&mins<16*60)   return 'open';
+  if(mins>=16*60&&mins<20*60)   return 'after';
+  return 'closed';
+}
+
+function countdownToOpen(){
+  const et=new Date().toLocaleString('en-US',{timeZone:'America/New_York',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
+  const [h,m,s]=et.split(':').map(Number);
+  let secs=(9*3600+30*60)-(h*3600+m*60+s);
+  if(secs<0) secs+=24*3600;
+  const hh=Math.floor(secs/3600), mm=Math.floor((secs%3600)/60), ss=secs%60;
+  return `${hh}:${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
+}
+
+const pmData = {
+  TSLA:{ orHigh:null, orLow:null, sessionHigh:null, sessionLow:null },
+  SPY: { orHigh:null, orLow:null, sessionHigh:null, sessionLow:null },
+};
+let powerHourAutoCount={ TSLA:0, SPY:0 };
+let powerHourAutoInterval=null;
+let pmRefreshInterval=null;
+let currentRefreshMode=null;
+
+function updatePMPanel(t, q){
+  const mode=getMarketMode();
+  const pm=pmData[t];
+  const labelEl=document.getElementById(`pm-label-${t}`);
+  const contentEl=document.getElementById(`pm-content-${t}`);
+  const refreshEl=document.getElementById(`pm-refresh-${t}`);
+  if(!labelEl||!contentEl) return;
+
+  // Update session extremes from quote
+  if(q&&q.c){
+    if(!pm.sessionHigh||q.h>pm.sessionHigh) pm.sessionHigh=q.h;
+    if(!pm.sessionLow ||q.l<pm.sessionLow)  pm.sessionLow=q.l;
+    if(mode==='power'&&pm.orHigh===null){ pm.orHigh=q.h; pm.orLow=q.l; }
+  }
+
+  const price=(q&&q.c)||prevClose[t];
+  const pc=prevClose[t];
+  const modeLabels={pre:'PRE-MARKET',power:'⚡ POWER HOUR',open:'MARKET OPEN',after:'AFTER HOURS',closed:'CLOSED'};
+  labelEl.textContent=modeLabels[mode]||'–';
+  labelEl.className=`pm-mode-label ${mode}`;
+  if(refreshEl) refreshEl.textContent=q?`↻ ${new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:false})} ET`:'';
+
+  if(mode==='pre'){
+    const gap=pc&&price?((price-pc)/pc*100):null;
+    const gapFill=gap!=null?(Math.abs(gap)<1?'High ~75%':Math.abs(gap)<2?'Medium ~50%':'Low ~25%'):'–';
+    const isUp=gap>=0;
+    contentEl.innerHTML=`
+      <div class="pm-countdown" id="pm-countdown-${t}">${countdownToOpen()}</div>
+      <div class="pm-grid">
+        <div class="pm-cell">Pre-Mkt Price<span class="pm-val">${price?'$'+price.toFixed(2):'–'}</span></div>
+        <div class="pm-cell">Gap vs Close<span class="pm-val ${gap==null?'':isUp?'up':'down'}">${gap!=null?(isUp?'+':'')+gap.toFixed(2)+'%':'–'}</span></div>
+        <div class="pm-cell">Gap Fill Prob<span class="pm-val amb">${gapFill}</span></div>
+        <div class="pm-cell">Prev Close<span class="pm-val">${pc?'$'+pc.toFixed(2):'–'}</span></div>
+      </div>`;
+  } else if(mode==='power'){
+    const orRange=pm.orHigh&&pm.orLow?`$${pm.orLow.toFixed(2)}–$${pm.orHigh.toFixed(2)}`:'Building…';
+    const totalVol=state[t].ohlcData?state[t].ohlcData.reduce((a,b)=>a+(b.volume||0),0):0;
+    contentEl.innerHTML=`
+      <div class="pm-grid">
+        <div class="pm-cell">Live Price<span class="pm-val">${price?'$'+price.toFixed(2):'–'}</span></div>
+        <div class="pm-cell">Open Range<span class="pm-val amb">${orRange}</span></div>
+        <div class="pm-cell">Session High<span class="pm-val up">${pm.sessionHigh?'$'+pm.sessionHigh.toFixed(2):'–'}</span></div>
+        <div class="pm-cell">Session Low<span class="pm-val down">${pm.sessionLow?'$'+pm.sessionLow.toFixed(2):'–'}</span></div>
+      </div>`;
+  } else if(mode==='open'){
+    const vwap=state[t].vwap;
+    const vd=vwap&&price?((price-vwap)/vwap*100):null;
+    contentEl.innerHTML=`
+      <div class="pm-grid">
+        <div class="pm-cell">Live Price<span class="pm-val">${price?'$'+price.toFixed(2):'–'}</span></div>
+        <div class="pm-cell">vs VWAP<span class="pm-val ${vd==null?'':vd>=0?'up':'down'}">${vd!=null?(vd>=0?'+':'')+vd.toFixed(2)+'%':'–'}</span></div>
+        <div class="pm-cell">Day High<span class="pm-val up">${pm.sessionHigh?'$'+pm.sessionHigh.toFixed(2):'–'}</span></div>
+        <div class="pm-cell">Day Low<span class="pm-val down">${pm.sessionLow?'$'+pm.sessionLow.toFixed(2):'–'}</span></div>
+      </div>`;
+  } else if(mode==='after'){
+    const ch=pc&&price?price-pc:null;
+    const pct=pc&&price?((price-pc)/pc*100):null;
+    const isUp=ch>=0;
+    contentEl.innerHTML=`
+      <div class="pm-grid">
+        <div class="pm-cell">AH Price<span class="pm-val">${price?'$'+price.toFixed(2):'–'}</span></div>
+        <div class="pm-cell">AH Change<span class="pm-val ${ch==null?'':isUp?'up':'down'}">${pct!=null?(isUp?'+':'')+pct.toFixed(2)+'%':'–'}</span></div>
+        <div class="pm-cell">Day Close<span class="pm-val">${pc?'$'+pc.toFixed(2):'–'}</span></div>
+        <div class="pm-cell">Day Range<span class="pm-val">${pm.sessionHigh&&pm.sessionLow?'$'+pm.sessionLow.toFixed(0)+'–$'+pm.sessionHigh.toFixed(0):'–'}</span></div>
+      </div>`;
+  } else {
+    contentEl.innerHTML=`<div style="font-size:10px;color:var(--text3);padding:2px 0">Market closed. Opens 9:30 AM ET.</div>`;
+  }
+}
+
+async function pmRefreshQuotes(){
+  if(!finnhubToken) return;
+  await Promise.all(['TSLA','SPY'].map(async t=>{
+    try{
+      const r=await fetch(`https://finnhub.io/api/v1/quote?symbol=${t}&token=${finnhubToken}`);
+      const q=await r.json();
+      if(q&&q.c){
+        prevClose[t]=q.pc;
+        updateLiveMetrics(t,q.c,q.d,q.dp);
+        updateExtRow(t,q);
+        updatePMPanel(t,q);
+        updateChatContextChip(t);
+      }
+    } catch(_){}
+  }));
+}
+
+function getRefreshMs(mode){
+  if(mode==='power') return 30000;
+  if(mode==='after') return 600000;
+  return 300000;
+}
+
+function schedulePMRefresh(){
+  const mode=getMarketMode();
+  if(pmRefreshInterval) clearInterval(pmRefreshInterval);
+  currentRefreshMode=mode;
+  pmRefreshInterval=setInterval(async()=>{
+    await pmRefreshQuotes();
+    const newMode=getMarketMode();
+    if(newMode!==currentRefreshMode) schedulePMRefresh(); // re-schedule on mode change
+    if(newMode==='power'&&!powerHourAutoInterval) startPowerHourAuto();
+  }, getRefreshMs(mode));
+}
+
+function startPowerHourAuto(){
+  if(powerHourAutoInterval) return;
+  powerHourAutoInterval=setInterval(()=>{
+    if(getMarketMode()!=='power'){
+      clearInterval(powerHourAutoInterval); powerHourAutoInterval=null; return;
+    }
+    if(powerHourAutoCount[activeTicker]<6){
+      powerHourAutoCount[activeTicker]++;
+      runAnalysis(activeTicker);
+    }
+  }, 10*60*1000);
+}
+
+// Live countdown tick every second during pre-market
+setInterval(()=>{
+  if(getMarketMode()==='pre'){
+    ['TSLA','SPY'].forEach(t=>{
+      const el2=document.getElementById(`pm-countdown-${t}`);
+      if(el2) el2.textContent=countdownToOpen();
+    });
+  }
+},1000);
+
 // ── INIT ──────────────────────────────────────────────────────
 async function init(){
   updateSessionBadges();
@@ -1162,6 +1556,11 @@ async function init(){
   await initFinnhub();
   state.TSLA.newsFetched=true;
   await renderChart('TSLA','1D');
+  // Initial PM panel render (quotes already loaded by initFinnhub)
+  ['TSLA','SPY'].forEach(t=>updatePMPanel(t,null));
+  // Start adaptive Finnhub refresh + power-hour auto-analysis
+  schedulePMRefresh();
+  if(getMarketMode()==='power') startPowerHourAuto();
   setTimeout(()=>fetchNews('TSLA'), 2000);
   setTimeout(fetchFearGreed, 1000);
   setTimeout(()=>{ renderOptionsFlow('TSLA'); renderOptionsFlow('SPY'); }, 500);
