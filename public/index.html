@@ -62,11 +62,16 @@ body { font-family:'SF Mono','Fira Code','Consolas',monospace; background:var(--
 .ext-item .up { color:var(--green); }
 .ext-item .down { color:var(--red); }
 
-/* main area */
-.main-area { display:grid; grid-template-columns:1fr 300px; min-height:420px; }
-.chart-panel { border-right:0.5px solid var(--border); padding:14px; }
+/* main area — full-width chart layout */
+.chart-panel { padding:14px; border-bottom:0.5px solid var(--border); }
 .panel-label { font-size:10px; color:var(--text3); text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; }
-.chart-wrap { position:relative; height:220px; overflow:hidden; }
+.chart-wrap { position:relative; height:340px; overflow:hidden; }
+
+/* below-chart info row */
+.below-chart-row { display:grid; grid-template-columns:1fr 1fr 1fr; border-bottom:0.5px solid var(--border); }
+.bc-section { padding:12px 14px; border-right:0.5px solid var(--border); }
+.bc-section:last-child { border-right:none; overflow-y:auto; max-height:230px; }
+.bc-section .pm-panel { border:none; background:none; padding:0; border-top:none; }
 .vol-bars { display:flex; align-items:flex-end; gap:2px; height:44px; margin-top:8px; }
 .vol-bar { flex:1; border-radius:1px 1px 0 0; }
 .indicators { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; padding-top:8px; border-top:0.5px solid var(--border); }
@@ -74,10 +79,6 @@ body { font-family:'SF Mono','Fira Code','Consolas',monospace; background:var(--
 .pill.bull { background:rgba(34,197,94,.12); color:var(--green); border-color:transparent; }
 .pill.bear { background:rgba(239,68,68,.12); color:var(--red); border-color:transparent; }
 
-/* side panel */
-.side-panel { display:flex; flex-direction:column; overflow:hidden; }
-.side-section { padding:12px 14px; border-bottom:0.5px solid var(--border); }
-.side-section:last-child { border-bottom:none; flex:1; overflow-y:auto; }
 .section-label { font-size:10px; color:var(--text3); text-transform:uppercase; letter-spacing:1px; margin-bottom:10px; }
 .signal-card { border:0.5px solid var(--border2); border-radius:var(--radius); padding:10px 12px; }
 .signal-dir { font-size:14px; font-weight:600; display:flex; align-items:center; gap:6px; margin-bottom:5px; }
@@ -150,12 +151,55 @@ body { font-family:'SF Mono','Fira Code','Consolas',monospace; background:var(--
 .disclaimer { text-align:center; font-size:10px; color:var(--text3); padding:10px; border-top:0.5px solid var(--border); font-family:-apple-system,sans-serif; }
 
 @media(max-width:700px) {
-  .main-area { grid-template-columns:1fr; }
   .metrics-row { grid-template-columns:repeat(2,1fr); }
-  .side-panel { border-top:0.5px solid var(--border); }
+  .below-chart-row { grid-template-columns:1fr; }
+  .bc-section { border-right:none; border-bottom:0.5px solid var(--border); }
+  .bc-section:last-child { border-bottom:none; }
   .bull-bear-row.visible { grid-template-columns:1fr; }
   .rr-grid { grid-template-columns:repeat(2,1fr); }
 }
+
+/* ─── SETUP SCORE ─────────────────────────────────────────────── */
+.setup-score { display:flex; align-items:flex-start; gap:14px; padding:12px 14px; border-radius:var(--radius); margin-bottom:10px; }
+.score-big { font-size:48px; font-weight:700; line-height:1; flex-shrink:0; min-width:64px; }
+.score-right { flex:1; }
+.score-verdict { font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase; margin-bottom:5px; }
+.score-bar-wrap { height:5px; background:var(--bg3); border-radius:3px; margin-bottom:6px; overflow:hidden; }
+.score-bar-fill { height:100%; border-radius:3px; transition:width 1.2s ease; }
+.score-reason { font-size:11px; color:var(--text2); line-height:1.55; font-family:-apple-system,sans-serif; }
+
+/* ─── SCANNER TAB ─────────────────────────────────────────────── */
+.scan-header { padding:16px 20px; border-bottom:0.5px solid var(--border); display:flex; align-items:center; justify-content:space-between; background:var(--bg3); flex-wrap:wrap; gap:10px; }
+.scan-info { font-size:11px; color:var(--text3); margin-top:2px; }
+.scan-btn { font-family:inherit; font-size:13px; font-weight:700; padding:10px 24px; border-radius:var(--radius); border:none; background:var(--text); color:var(--bg); cursor:pointer; letter-spacing:.5px; transition:opacity .15s; }
+.scan-btn:hover { opacity:.85; }
+.scan-btn:disabled { opacity:.35; cursor:not-allowed; }
+.scan-ts { font-size:10px; color:var(--text3); }
+.scan-results { padding:16px 20px; }
+.scan-card { border:0.5px solid var(--border2); border-radius:var(--radius-lg); padding:14px 16px; margin-bottom:12px; cursor:pointer; background:var(--bg2); transition:border-color .15s; }
+.scan-card:hover { border-color:rgba(255,255,255,0.22); }
+.scan-card.strong { border-color:rgba(34,197,94,.45); background:rgba(34,197,94,.03); }
+.scan-card.watchlist { border-color:rgba(245,158,11,.4); background:rgba(245,158,11,.025); }
+.scan-top { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:8px; gap:8px; }
+.scan-ticker-name { font-size:20px; font-weight:700; letter-spacing:1px; }
+.scan-company { font-size:10px; color:var(--text3); margin-top:2px; }
+.scan-badges { display:flex; flex-direction:column; align-items:flex-end; gap:5px; }
+.scan-sig { font-size:11px; font-weight:700; padding:4px 12px; border-radius:20px; }
+.scan-sig.call { background:rgba(34,197,94,.15); color:var(--green); }
+.scan-sig.put  { background:rgba(239,68,68,.15); color:var(--red); }
+.scan-sig.wait { background:rgba(245,158,11,.15); color:var(--amber); }
+.scan-lbl { font-size:9px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; }
+.scan-lbl.strong { color:var(--green); }
+.scan-lbl.watchlist { color:var(--amber); }
+.scan-score-row { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+.scan-score-num { font-size:26px; font-weight:700; line-height:1; }
+.scan-score-track { flex:1; height:4px; background:var(--bg3); border-radius:2px; overflow:hidden; }
+.scan-score-fill { height:100%; border-radius:2px; }
+.scan-summary { font-size:12px; color:var(--text); line-height:1.65; font-family:-apple-system,sans-serif; margin-bottom:6px; }
+.scan-why { font-size:11px; color:var(--text3); font-style:italic; font-family:-apple-system,sans-serif; margin-bottom:10px; }
+.scan-levels { display:flex; gap:16px; font-size:11px; flex-wrap:wrap; }
+.scan-lv { color:var(--text3); }
+.scan-lv b { color:var(--text); font-weight:600; margin-left:3px; }
 
 /* ─── ASK CLAUDE SLIDING PANEL ──────────────────────────────── */
 .claude-panel {
@@ -249,6 +293,7 @@ body { font-family:'SF Mono','Fira Code','Consolas',monospace; background:var(--
   <div class="tab-bar">
     <button class="tab-btn active" data-ticker="TSLA" onclick="switchTab('TSLA')">TSLA</button>
     <button class="tab-btn" data-ticker="SPY" onclick="switchTab('SPY')">SPY</button>
+    <button class="tab-btn" data-ticker="SCANNER" onclick="switchTab('SCANNER')">SCANNER</button>
   </div>
 
   <!-- ═══════════════════ TSLA TAB ═══════════════════ -->
@@ -281,36 +326,36 @@ body { font-family:'SF Mono','Fira Code','Consolas',monospace; background:var(--
       <div class="ext-item"><span style="color:var(--text3)">After Hours:</span><span id="ext-after-TSLA">–</span></div>
     </div>
 
-    <div class="main-area">
-      <div class="chart-panel">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-          <div class="panel-label" style="margin-bottom:0">Candlestick + VWAP</div>
-          <div style="display:flex;align-items:center">
-            <span style="font-size:9px;color:var(--text3);margin-right:6px">scroll=zoom · drag=pan · dbl-click=reset</span>
-            <button class="zoom-btn" onclick="zoomChart('in','TSLA')" title="Zoom In">+</button>
-            <button class="zoom-btn" onclick="zoomChart('out','TSLA')" title="Zoom Out">−</button>
-            <button class="zoom-btn" onclick="resetChartZoom('TSLA')" title="Reset Zoom">↺</button>
-          </div>
-        </div>
-        <div class="chart-wrap" id="chart-wrap-TSLA"></div>
-        <div class="panel-label" style="margin-top:8px">Volume profile</div>
-        <div class="vol-bars" id="volBars-TSLA"></div>
-        <div class="indicators" id="pills-TSLA">
-          <span class="pill">RSI: –</span><span class="pill">MACD: –</span>
-          <span class="pill">VWAP: –</span><span class="pill">50 EMA: –</span><span class="pill">BB: –</span>
+    <div class="chart-panel">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <div class="panel-label" style="margin-bottom:0">Candlestick + VWAP</div>
+        <div style="display:flex;align-items:center">
+          <span style="font-size:9px;color:var(--text3);margin-right:6px">scroll=zoom · drag=pan · dbl-click=reset</span>
+          <button class="zoom-btn" onclick="zoomChart('in','TSLA')" title="Zoom In">+</button>
+          <button class="zoom-btn" onclick="zoomChart('out','TSLA')" title="Zoom Out">−</button>
+          <button class="zoom-btn" onclick="resetChartZoom('TSLA')" title="Reset Zoom">↺</button>
         </div>
       </div>
-      <div class="side-panel">
-        <div class="side-section">
-          <div class="section-label">Trade Signal</div>
-          <div class="signal-card">
-            <div class="signal-dir neutral" id="sig-dir-TSLA">↔ Awaiting Analysis</div>
-            <div class="signal-detail" id="sig-detail-TSLA">Hit Run Full Analysis to get your CALL / PUT recommendation.</div>
-            <div class="conf-bar"><div class="conf-fill neutral" id="conf-fill-TSLA" style="width:0%"></div></div>
-          </div>
-          <div style="font-size:10px;color:var(--text3);margin-top:5px" id="conf-label-TSLA"></div>
+      <div class="chart-wrap" id="chart-wrap-TSLA"></div>
+      <div class="panel-label" style="margin-top:8px">Volume profile</div>
+      <div class="vol-bars" id="volBars-TSLA"></div>
+      <div class="indicators" id="pills-TSLA">
+        <span class="pill">RSI: –</span><span class="pill">MACD: –</span>
+        <span class="pill">VWAP: –</span><span class="pill">50 EMA: –</span><span class="pill">BB: –</span>
+      </div>
+    </div>
+    <div class="below-chart-row">
+      <div class="bc-section">
+        <div class="section-label">Trade Signal</div>
+        <div class="signal-card">
+          <div class="signal-dir neutral" id="sig-dir-TSLA">↔ Awaiting Analysis</div>
+          <div class="signal-detail" id="sig-detail-TSLA">Hit Run Full Analysis to get your CALL / PUT recommendation.</div>
+          <div class="conf-bar"><div class="conf-fill neutral" id="conf-fill-TSLA" style="width:0%"></div></div>
         </div>
-        <div class="pm-panel" id="pm-panel-TSLA">
+        <div style="font-size:10px;color:var(--text3);margin-top:5px" id="conf-label-TSLA"></div>
+      </div>
+      <div class="bc-section" style="padding:0">
+        <div class="pm-panel" id="pm-panel-TSLA" style="height:100%;border-top:none;border-bottom:none">
           <div class="section-label" style="margin-bottom:6px;color:var(--amber);letter-spacing:1.5px">Pre-Market Intelligence</div>
           <div class="pm-header">
             <div class="pm-mode-label closed" id="pm-label-TSLA">Market Status</div>
@@ -318,10 +363,10 @@ body { font-family:'SF Mono','Fira Code','Consolas',monospace; background:var(--
           </div>
           <div id="pm-content-TSLA"><div style="font-size:10px;color:var(--text3)">Loading market data…</div></div>
         </div>
-        <div class="side-section" style="flex:1;overflow-y:auto">
-          <div class="section-label">Live News Sentiment</div>
-          <div id="news-feed-TSLA"><div style="font-size:11px;color:var(--text3)">Run Full Analysis to load news.</div></div>
-        </div>
+      </div>
+      <div class="bc-section">
+        <div class="section-label">Live News</div>
+        <div id="news-feed-TSLA"><div style="font-size:11px;color:var(--text3)">Run Full Analysis to load news.</div></div>
       </div>
     </div>
 
@@ -383,36 +428,36 @@ body { font-family:'SF Mono','Fira Code','Consolas',monospace; background:var(--
       <div class="ext-item"><span style="color:var(--text3)">After Hours:</span><span id="ext-after-SPY">–</span></div>
     </div>
 
-    <div class="main-area">
-      <div class="chart-panel">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-          <div class="panel-label" style="margin-bottom:0">Candlestick + VWAP</div>
-          <div style="display:flex;align-items:center">
-            <span style="font-size:9px;color:var(--text3);margin-right:6px">scroll=zoom · drag=pan · dbl-click=reset</span>
-            <button class="zoom-btn" onclick="zoomChart('in','SPY')" title="Zoom In">+</button>
-            <button class="zoom-btn" onclick="zoomChart('out','SPY')" title="Zoom Out">−</button>
-            <button class="zoom-btn" onclick="resetChartZoom('SPY')" title="Reset Zoom">↺</button>
-          </div>
-        </div>
-        <div class="chart-wrap" id="chart-wrap-SPY"></div>
-        <div class="panel-label" style="margin-top:8px">Volume profile</div>
-        <div class="vol-bars" id="volBars-SPY"></div>
-        <div class="indicators" id="pills-SPY">
-          <span class="pill">RSI: –</span><span class="pill">MACD: –</span>
-          <span class="pill">VWAP: –</span><span class="pill">50 EMA: –</span><span class="pill">BB: –</span>
+    <div class="chart-panel">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <div class="panel-label" style="margin-bottom:0">Candlestick + VWAP</div>
+        <div style="display:flex;align-items:center">
+          <span style="font-size:9px;color:var(--text3);margin-right:6px">scroll=zoom · drag=pan · dbl-click=reset</span>
+          <button class="zoom-btn" onclick="zoomChart('in','SPY')" title="Zoom In">+</button>
+          <button class="zoom-btn" onclick="zoomChart('out','SPY')" title="Zoom Out">−</button>
+          <button class="zoom-btn" onclick="resetChartZoom('SPY')" title="Reset Zoom">↺</button>
         </div>
       </div>
-      <div class="side-panel">
-        <div class="side-section">
-          <div class="section-label">Trade Signal</div>
-          <div class="signal-card">
-            <div class="signal-dir neutral" id="sig-dir-SPY">↔ Awaiting Analysis</div>
-            <div class="signal-detail" id="sig-detail-SPY">Hit Run Full Analysis to get your CALL / PUT recommendation.</div>
-            <div class="conf-bar"><div class="conf-fill neutral" id="conf-fill-SPY" style="width:0%"></div></div>
-          </div>
-          <div style="font-size:10px;color:var(--text3);margin-top:5px" id="conf-label-SPY"></div>
+      <div class="chart-wrap" id="chart-wrap-SPY"></div>
+      <div class="panel-label" style="margin-top:8px">Volume profile</div>
+      <div class="vol-bars" id="volBars-SPY"></div>
+      <div class="indicators" id="pills-SPY">
+        <span class="pill">RSI: –</span><span class="pill">MACD: –</span>
+        <span class="pill">VWAP: –</span><span class="pill">50 EMA: –</span><span class="pill">BB: –</span>
+      </div>
+    </div>
+    <div class="below-chart-row">
+      <div class="bc-section">
+        <div class="section-label">Trade Signal</div>
+        <div class="signal-card">
+          <div class="signal-dir neutral" id="sig-dir-SPY">↔ Awaiting Analysis</div>
+          <div class="signal-detail" id="sig-detail-SPY">Hit Run Full Analysis to get your CALL / PUT recommendation.</div>
+          <div class="conf-bar"><div class="conf-fill neutral" id="conf-fill-SPY" style="width:0%"></div></div>
         </div>
-        <div class="pm-panel" id="pm-panel-SPY">
+        <div style="font-size:10px;color:var(--text3);margin-top:5px" id="conf-label-SPY"></div>
+      </div>
+      <div class="bc-section" style="padding:0">
+        <div class="pm-panel" id="pm-panel-SPY" style="height:100%;border-top:none;border-bottom:none">
           <div class="section-label" style="margin-bottom:6px;color:var(--amber);letter-spacing:1.5px">Pre-Market Intelligence</div>
           <div class="pm-header">
             <div class="pm-mode-label closed" id="pm-label-SPY">Market Status</div>
@@ -420,10 +465,10 @@ body { font-family:'SF Mono','Fira Code','Consolas',monospace; background:var(--
           </div>
           <div id="pm-content-SPY"><div style="font-size:10px;color:var(--text3)">Loading market data…</div></div>
         </div>
-        <div class="side-section" style="flex:1;overflow-y:auto">
-          <div class="section-label">Live News Sentiment</div>
-          <div id="news-feed-SPY"><div style="font-size:11px;color:var(--text3)">Run Full Analysis to load news.</div></div>
-        </div>
+      </div>
+      <div class="bc-section">
+        <div class="section-label">Live News</div>
+        <div id="news-feed-SPY"><div style="font-size:11px;color:var(--text3)">Run Full Analysis to load news.</div></div>
       </div>
     </div>
 
@@ -453,6 +498,23 @@ body { font-family:'SF Mono','Fira Code','Consolas',monospace; background:var(--
         <div class="bb-card bull-card"><div class="bb-label">🐂 Bulls Say</div><div class="bb-text" id="bull-text-SPY"></div></div>
         <div class="bb-card bear-card"><div class="bb-label">🐻 Bears Say</div><div class="bb-text" id="bear-text-SPY"></div></div>
       </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ SCANNER TAB ═══════════════════ -->
+  <div class="ticker-tab" id="tab-SCANNER">
+    <div class="scan-header">
+      <div>
+        <div style="font-size:14px;font-weight:700;letter-spacing:2px">MARKET SCANNER</div>
+        <div class="scan-info">Finds top 3 S&amp;P 500 stocks primed for a trade today using AI + live data</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:14px">
+        <span class="scan-ts" id="scan-ts">Not yet scanned</span>
+        <button class="scan-btn" id="scan-btn" onclick="runScanner()">🔍 SCAN NOW</button>
+      </div>
+    </div>
+    <div class="scan-results" id="scan-results">
+      <div style="text-align:center;padding:50px 20px;font-size:12px;color:var(--text3)">Click <strong style="color:var(--text)">SCAN NOW</strong> to find today's highest-probability trade setups across the S&amp;P 500.<br><br>Scanner uses AI + live market data to score every stock 0-100 and surface only the cleanest setups.</div>
     </div>
   </div>
 
@@ -539,6 +601,7 @@ function switchTab(t){
   document.querySelectorAll('.ticker-tab').forEach(x => x.classList.remove('active'));
   document.getElementById(`tab-${t}`).classList.add('active');
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.ticker === t));
+  if(t === 'SCANNER') return; // scanner has its own state, no chart/chat needed
   if(!state[t].chart) renderChart(t, state[t].tf);
   // Restore Ask Claude panel state for this ticker
   const panel = document.getElementById('claude-panel');
@@ -855,6 +918,23 @@ function renderAnalysisCards(t, text){
   ].join('');
 }
 
+// ── SETUP SCORE CARD ─────────────────────────────────────────
+function renderSetupScore(t, score, reason){
+  const container=document.getElementById(`analysis-cards-${t}`);
+  if(!container) return;
+  const n=parseInt(score)||0;
+  const color=n>=80?'var(--green)':n>=60?'var(--amber)':'var(--red)';
+  const verdict=n>=80?'STRONG SETUP':n>=60?'GOOD SETUP':'WEAK SETUP';
+  const bg=n>=80?'rgba(34,197,94,.06)':n>=60?'rgba(245,158,11,.06)':'rgba(239,68,68,.06)';
+  const bdr=n>=80?'rgba(34,197,94,.3)':n>=60?'rgba(245,158,11,.3)':'rgba(239,68,68,.25)';
+  const el2=document.createElement('div');
+  el2.className='setup-score';
+  el2.style.cssText=`background:${bg};border:0.5px solid ${bdr};`;
+  el2.innerHTML=`<div class="score-big" style="color:${color}">${n}</div><div class="score-right"><div class="score-verdict" style="color:${color}">${verdict}</div><div class="score-bar-wrap"><div class="score-bar-fill" style="width:0%;background:${color}"></div></div><div class="score-reason">${reason||'No explanation provided.'}</div></div>`;
+  container.insertBefore(el2,container.firstChild);
+  setTimeout(()=>{ const fill=el2.querySelector('.score-bar-fill'); if(fill) fill.style.width=n+'%'; },50);
+}
+
 // ── MARKET SESSION ────────────────────────────────────────────
 function getSession(){
   const et=new Date().toLocaleString('en-US',{timeZone:'America/New_York',hour:'2-digit',minute:'2-digit',hour12:false});
@@ -986,16 +1066,28 @@ async function initFinnhub(){
   connectFinnhub();
 }
 
-// ── CLAUDE API ────────────────────────────────────────────────
+// ── CLAUDE API — single-flight queue ─────────────────────────
+let _claudeLock=false;
+const _claudeQueue=[];
+
 async function claudeRequest(body){
-  const r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-  const data=await r.json();
-  if(r.status===429||r.status===529){
-    const detail=data?.error?.message||data?.error||'';
-    throw Object.assign(new Error('RATE_LIMITED'), {detail});
+  if(_claudeLock){
+    await new Promise(res=>_claudeQueue.push(res));
   }
-  if(!r.ok) throw new Error(`API_ERROR_${r.status}: ${data?.error?.message||''}`);
-  return data;
+  _claudeLock=true;
+  try{
+    const r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const data=await r.json();
+    if(r.status===429||r.status===529){
+      const detail=data?.error?.message||data?.error||'';
+      throw Object.assign(new Error('RATE_LIMITED'),{detail});
+    }
+    if(!r.ok) throw new Error(`API_ERROR_${r.status}: ${data?.error?.message||''}`);
+    return data;
+  } finally {
+    _claudeLock=false;
+    if(_claudeQueue.length>0) _claudeQueue.shift()();
+  }
 }
 
 function startCooldown(t, secs=30, label='Ready in'){
@@ -1005,24 +1097,170 @@ function startCooldown(t, secs=30, label='Ready in'){
   const iv=setInterval(()=>{ rem--; if(rem<=0){ clearInterval(iv); btn.disabled=false; btn.textContent='⚡ RUN FULL AI ANALYSIS'; } else btn.textContent=`⏳ ${label} ${rem}s`; },1000);
 }
 
+// ── SCANNER ────────────────────────────────────────────────────
+const SCANNER_SYS=`You are an expert stock scanner for S&P 500 day trading. Find the top 3 S&P 500 stocks with the highest-probability trade setups TODAY. Use web search to find today's biggest movers, unusual options activity, and fresh catalysts. Write everything in plain English — no jargon. If you use a technical term, explain it in brackets.
+
+Format EXACTLY as below — all 3 stocks required:
+
+STOCK_1
+TICKER: [symbol]
+COMPANY: [company name]
+SIGNAL: [CALL / PUT / WAIT]
+SCORE: [0-100. Relative volume 2x+=20pts, unusual options=20pts, 3+ indicators aligned=20pts, fresh catalyst=15pts, clean level break=15pts, IV rank<30=10pts]
+SUMMARY: [2-3 plain English sentences — why this stock is moving and what the trade is]
+WHY_SCORE: [one sentence explaining the score]
+ENTRY: $[price]
+TARGET: $[price]
+STOP: $[price]
+END_STOCK_1
+
+STOCK_2
+TICKER: [symbol]
+COMPANY: [company name]
+SIGNAL: [CALL / PUT / WAIT]
+SCORE: [0-100]
+SUMMARY: [2-3 sentences]
+WHY_SCORE: [one sentence]
+ENTRY: $[price]
+TARGET: $[price]
+STOP: $[price]
+END_STOCK_2
+
+STOCK_3
+TICKER: [symbol]
+COMPANY: [company name]
+SIGNAL: [CALL / PUT / WAIT]
+SCORE: [0-100]
+SUMMARY: [2-3 sentences]
+WHY_SCORE: [one sentence]
+ENTRY: $[price]
+TARGET: $[price]
+STOP: $[price]
+END_STOCK_3`;
+
+const SCANNER_USR=()=>`Scan the S&P 500 for today's top 3 highest-probability trade setups. Date: ${new Date().toDateString()}, Time: ${new Date().toLocaleTimeString('en-US',{timeZone:'America/New_York',hour:'2-digit',minute:'2-digit',hour12:false})} ET.
+
+Use web search to find:
+1. Today's top pre-market movers and biggest stock news
+2. Unusual options activity in S&P 500 stocks
+3. Stocks breaking key technical levels with volume
+
+Return the 3 best setups with complete details in the exact format requested.`;
+
+let _scanCooldownTimer=null;
+let _scannerPowerHourInterval=null;
+let _scannerHasAutoScannedToday=false;
+
+function startScannerCooldown(secs=30){
+  const btn=document.getElementById('scan-btn'); if(!btn) return;
+  btn.disabled=true; let rem=secs;
+  btn.textContent=`⏳ Wait ${rem}s`;
+  if(_scanCooldownTimer) clearInterval(_scanCooldownTimer);
+  _scanCooldownTimer=setInterval(()=>{
+    rem--;
+    if(rem<=0){ clearInterval(_scanCooldownTimer); _scanCooldownTimer=null; btn.disabled=false; btn.textContent='🔍 SCAN NOW'; }
+    else btn.textContent=`⏳ Wait ${rem}s`;
+  },1000);
+}
+
+function renderScannerCards(text){
+  const results=document.getElementById('scan-results'); if(!results) return;
+  const cards=[];
+  for(let i=1;i<=3;i++){
+    const m=text.match(new RegExp(`STOCK_${i}\\n([\\s\\S]*?)END_STOCK_${i}`));
+    if(!m) continue;
+    const block=m[1];
+    const get=key=>{ const r=block.match(new RegExp(`${key}:\\s*([^\\n]+)`,'i')); return r?r[1].trim():''; };
+    const ticker=get('TICKER'), company=get('COMPANY'), signal=get('SIGNAL').toLowerCase();
+    const score=parseInt(get('SCORE'))||0, summary=get('SUMMARY'), whyScore=get('WHY_SCORE');
+    const entry=get('ENTRY'), target=get('TARGET'), stop=get('STOP');
+    const scoreColor=score>=80?'var(--green)':score>=60?'var(--amber)':'var(--red)';
+    const cardClass=score>=80?'strong':score>=60?'watchlist':'';
+    const labelClass=score>=80?'strong':score>=60?'watchlist':'';
+    const labelText=score>=80?'STRONG SETUP':score>=60?'WATCH LIST':'SETUP';
+    const sigClass=signal==='call'?'call':signal==='put'?'put':'wait';
+    const sigText=signal==='call'?'▲ CALL':signal==='put'?'▼ PUT':'↔ WAIT';
+    cards.push(`<div class="scan-card ${cardClass}">
+      <div class="scan-top">
+        <div><div class="scan-ticker-name">${ticker}</div><div class="scan-company">${company}</div></div>
+        <div class="scan-badges"><span class="scan-sig ${sigClass}">${sigText}</span><span class="scan-lbl ${labelClass}">${labelText}</span></div>
+      </div>
+      <div class="scan-score-row">
+        <div class="scan-score-num" style="color:${scoreColor}">${score}</div>
+        <div class="scan-score-track"><div class="scan-score-fill" style="width:${score}%;background:${scoreColor}"></div></div>
+      </div>
+      <div class="scan-summary">${summary}</div>
+      <div class="scan-why">${whyScore}</div>
+      <div class="scan-levels">
+        <span class="scan-lv">Entry:<b>${entry}</b></span>
+        <span class="scan-lv">Target:<b>${target}</b></span>
+        <span class="scan-lv">Stop:<b>${stop}</b></span>
+      </div>
+    </div>`);
+  }
+  if(!cards.length){
+    results.innerHTML=`<div style="text-align:center;padding:30px 20px;font-size:12px;color:var(--text3)">Could not parse results. Raw output:<br><pre style="text-align:left;font-size:10px;overflow:auto;max-height:300px;margin-top:10px">${text.slice(0,2000)}</pre></div>`;
+    return;
+  }
+  results.innerHTML=cards.join('');
+}
+
+async function runScanner(){
+  const btn=document.getElementById('scan-btn');
+  const results=document.getElementById('scan-results');
+  const ts=document.getElementById('scan-ts');
+  btn.disabled=true; btn.textContent='🔍 Scanning…';
+  results.innerHTML='<div style="text-align:center;padding:50px 20px;font-size:12px;color:var(--text3)">AI is searching the market for today\'s best setups…<br><br><span style="font-size:10px;opacity:.7">Uses web search — takes 20-45 seconds.</span></div>';
+  try{
+    const d=await claudeRequest({
+      model:'claude-opus-4-7', max_tokens:2000,
+      system:SCANNER_SYS,
+      messages:[{role:'user',content:SCANNER_USR()}],
+      tools:[{type:'web_search_20250305',name:'web_search',max_uses:5}]
+    });
+    const text=d.content.filter(b=>b.type==='text').map(b=>b.text||'').join('\n');
+    const now=new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:false});
+    if(ts) ts.textContent=`Last scan: ${now} ET`;
+    renderScannerCards(text);
+  } catch(e){
+    const msg=e.message==='RATE_LIMITED'?'⏳ Rate limited. Please wait 30s and try again.':`❌ Scan failed: ${e.message}`;
+    results.innerHTML=`<div style="text-align:center;padding:40px 20px;font-size:12px;color:var(--red)">${msg}</div>`;
+  }
+  startScannerCooldown(30);
+}
+
+function startScannerPowerHourAuto(){
+  if(_scannerPowerHourInterval) return;
+  if(!_scannerHasAutoScannedToday){
+    _scannerHasAutoScannedToday=true;
+    runScanner();
+  }
+  _scannerPowerHourInterval=setInterval(()=>{
+    if(getMarketMode()!=='power'){
+      clearInterval(_scannerPowerHourInterval); _scannerPowerHourInterval=null; return;
+    }
+    runScanner();
+  }, 10*60*1000);
+}
+
 const ANALYSIS_SYS={
-  TSLA:pos=>`You are an expert TSLA day trader and options analyst. Always give a complete, detailed analysis — even for WAIT. Format your response EXACTLY as below with no extra text:
+  TSLA:pos=>`You are an expert TSLA day trader explaining a trade to a smart friend who is new to trading. Write everything in plain English — no jargon. If you must use a technical term, explain it in brackets like: "RSI (a measure of whether a stock is overbought or oversold)". Always give a complete analysis even for WAIT. Format EXACTLY as below:
 
 🎯 SIGNAL: [CALL / PUT / WAIT]
 Confidence: [X%]
 
 📊 TECHNICAL SETUP:
-• [key level / pattern]
-• [indicator confluence]
-• [momentum / trend]
+• [explain what the chart is doing in plain English — where price is, what pattern you see]
+• [what the indicators are telling us in plain words]
+• [is momentum building or fading — explain simply]
 
 📰 NEWS CATALYST:
-• [most important Tesla/Elon catalyst]
-• [secondary catalyst]
+• [most important Tesla/Elon news — what happened and why it matters for the trade]
+• [secondary catalyst in plain English]
 
 ⚠️ KEY RISKS:
-• [specific risk 1]
-• [specific risk 2]
+• [specific risk in plain English — what could go wrong and why]
+• [second risk]
 
 🕐 TRADE SETUP (${pos.toUpperCase()}):
 Entry: $X
@@ -1030,27 +1268,30 @@ Target: $X (+X%)
 Stop: $X (-X%)
 Strike/Exp suggestion: [X strike, 0-1 DTE]
 
-BULL_CASE: [2-3 sentences in plain everyday English — why bulls think TSLA goes up today]
+BULL_CASE: [2-3 sentences written like texting a friend — why the stock could go up today. No jargon.]
 
-BEAR_CASE: [2-3 sentences in plain everyday English — why bears think TSLA goes down today]`,
+BEAR_CASE: [2-3 sentences written like texting a friend — why the stock could go down today. No jargon.]
 
-  SPY:pos=>`You are an expert S&P 500 macro trader and options analyst. Always give a complete, detailed analysis — even for WAIT. Format your response EXACTLY as below with no extra text:
+SETUP_SCORE: [single number 0-100. Score: relative volume 2x+=20pts, unusual options=20pts, 3+ indicators aligned=20pts, fresh catalyst=15pts, clean level break=15pts, IV rank<30=10pts]
+SCORE_REASON: [one plain English sentence explaining the score like "Scored 75 because volume is double normal and price just broke above a level it tested 3 times, but there's no big news today."]`,
+
+  SPY:pos=>`You are an expert S&P 500 macro trader explaining a trade to a smart friend who is new to trading. Write everything in plain English — no jargon. If you must use a technical term, explain it in brackets. Always give a complete analysis even for WAIT. Format EXACTLY as below:
 
 🎯 SIGNAL: [CALL / PUT / WAIT]
 Confidence: [X%]
 
 📊 TECHNICAL SETUP:
-• [key SPY level / support-resistance]
-• [breadth or sector rotation signal]
-• [momentum vs 50/200 EMA]
+• [explain what SPY's chart is doing — key price levels, what pattern you see, all in plain English]
+• [what the indicators are saying in plain words]
+• [momentum vs recent highs/lows — explained simply]
 
 📰 MACRO CATALYST:
-• [most important macro driver — Fed, CPI, yields, jobs]
-• [secondary catalyst]
+• [most important macro driver — Fed/CPI/yields/jobs — what happened and why it moves markets]
+• [secondary catalyst in plain English]
 
 ⚠️ KEY RISKS:
-• [specific risk 1]
-• [specific risk 2]
+• [specific risk in plain English — what could reverse the trade]
+• [second risk]
 
 🕐 TRADE SETUP (${pos.toUpperCase()}):
 Entry: $X
@@ -1058,9 +1299,12 @@ Target: $X (+X%)
 Stop: $X (-X%)
 Strike/Exp suggestion: [X strike, 0-1 DTE]
 
-BULL_CASE: [2-3 sentences in plain everyday English — why bulls think the market goes up today]
+BULL_CASE: [2-3 sentences written like texting a friend — why the market could go up today. No jargon.]
 
-BEAR_CASE: [2-3 sentences in plain everyday English — why bears think the market goes down today]`,
+BEAR_CASE: [2-3 sentences written like texting a friend — why the market could go down today. No jargon.]
+
+SETUP_SCORE: [single number 0-100. Score: relative volume 2x+=20pts, unusual options=20pts, 3+ indicators aligned=20pts, fresh catalyst=15pts, clean level break=15pts, IV rank<30=10pts]
+SCORE_REASON: [one plain English sentence explaining the score]`,
 };
 
 const ANALYSIS_USR={
@@ -1095,6 +1339,11 @@ async function runAnalysis(t){
 
     renderAnalysisCards(t,text);
 
+    // Parse and render Setup Score
+    const scoreM=text.match(/SETUP_SCORE:\s*(\d+)/i);
+    const scoreReasonM=text.match(/SCORE_REASON:\s*([^\n]+)/i);
+    if(scoreM) renderSetupScore(t,scoreM[1],scoreReasonM?scoreReasonM[1].trim():'');
+
     const isCall=/signal:\s*call/i.test(text);
     const isPut=/signal:\s*put/i.test(text);
     const confM=text.match(/confidence[:\s]+(\d+)/i);
@@ -1124,8 +1373,9 @@ async function runAnalysis(t){
 
     // Bull/bear
     const bui=text.indexOf('BULL_CASE:'), bei=text.indexOf('BEAR_CASE:');
+    const scoreIdx2=text.indexOf('SETUP_SCORE:');
     const bt=bui>=0?text.slice(bui+10,bei>bui?bei:undefined).trim():'';
-    const br=bei>=0?text.slice(bei+10).trim():'';
+    const br=bei>=0?text.slice(bei+10,scoreIdx2>bei?scoreIdx2:undefined).trim():'';
     if(bt||br){
       el('bull-text',t).textContent=bt; el('bear-text',t).textContent=br;
       el('bull-bear',t).classList.add('visible');
@@ -1393,6 +1643,7 @@ function schedulePMRefresh(){
     const newMode=getMarketMode();
     if(newMode!==currentRefreshMode) schedulePMRefresh(); // re-schedule on mode change
     if(newMode==='power'&&!powerHourAutoInterval) startPowerHourAuto();
+    if(newMode==='power'&&!_scannerPowerHourInterval) startScannerPowerHourAuto();
   }, getRefreshMs(mode));
 }
 
@@ -1477,6 +1728,7 @@ async function init(){
   // Start adaptive Finnhub refresh + power-hour auto-analysis
   schedulePMRefresh();
   if(getMarketMode()==='power') startPowerHourAuto();
+  if(getMarketMode()==='power') startScannerPowerHourAuto();
 }
 init();
 </script>
