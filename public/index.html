@@ -334,6 +334,7 @@ body { font-family:'SF Mono','Fira Code','Consolas',monospace; background:var(--
         </div>
       </div>
       <button class="analyze-btn" id="analyze-btn-TSLA" onclick="runAnalysis('TSLA')">⚡ RUN FULL AI ANALYSIS</button>
+      <div style="text-align:center;margin-top:6px"><button onclick="testConnection('TSLA')" style="font-family:inherit;font-size:10px;background:none;border:0.5px solid var(--border2);color:var(--text3);padding:3px 12px;border-radius:var(--radius);cursor:pointer">🔌 Test Claude Connection</button></div>
 
       <div class="analysis-cards" id="analysis-cards-TSLA"></div>
 
@@ -435,6 +436,7 @@ body { font-family:'SF Mono','Fira Code','Consolas',monospace; background:var(--
         </div>
       </div>
       <button class="analyze-btn" id="analyze-btn-SPY" onclick="runAnalysis('SPY')">⚡ RUN FULL AI ANALYSIS</button>
+      <div style="text-align:center;margin-top:6px"><button onclick="testConnection('SPY')" style="font-family:inherit;font-size:10px;background:none;border:0.5px solid var(--border2);color:var(--text3);padding:3px 12px;border-radius:var(--radius);cursor:pointer">🔌 Test Claude Connection</button></div>
 
       <div class="analysis-cards" id="analysis-cards-SPY"></div>
 
@@ -987,9 +989,13 @@ async function initFinnhub(){
 // ── CLAUDE API ────────────────────────────────────────────────
 async function claudeRequest(body){
   const r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-  if(r.status===429||r.status===529) throw new Error('RATE_LIMITED');
-  if(!r.ok) throw new Error(`API_ERROR_${r.status}`);
-  return r.json();
+  const data=await r.json();
+  if(r.status===429||r.status===529){
+    const detail=data?.error?.message||data?.error||'';
+    throw Object.assign(new Error('RATE_LIMITED'), {detail});
+  }
+  if(!r.ok) throw new Error(`API_ERROR_${r.status}: ${data?.error?.message||''}`);
+  return data;
 }
 
 function startCooldown(t, secs=30, label='Ready in'){
@@ -1081,7 +1087,7 @@ async function runAnalysis(t){
 
   try{
     const d=await claudeRequest({
-      model:'claude-haiku-4-5-20251001', max_tokens:1000,
+      model:'claude-3-5-haiku-20241022', max_tokens:1000,
       system:ANALYSIS_SYS[t](s.pos),
       messages:[{role:'user',content:ANALYSIS_USR[t](s.pos,pills)}]
     });
@@ -1136,10 +1142,11 @@ async function runAnalysis(t){
 
   } catch(e){
     if(e.message==='RATE_LIMITED'){
-      cards.innerHTML='<div class="acard raw">⏳ Rate limited — Anthropic API is throttling requests. Try again in 30 seconds.</div>';
-      startCooldown(t,30,'Rate limited —'); return;
+      const info=e.detail?` (${e.detail})`:'';
+      cards.innerHTML=`<div class="acard raw">⏳ API overloaded${info}. Waiting 30s before retry.</div>`;
+      startCooldown(t,30,'Retry in'); return;
     }
-    cards.innerHTML='<div class="acard raw">Analysis failed. Check your ANTHROPIC_API_KEY in Vercel environment variables.</div>';
+    cards.innerHTML=`<div class="acard raw">❌ ${e.message}<br><br>Check: Vercel → Settings → Environment Variables → ANTHROPIC_API_KEY is set. Use the Test button below to diagnose.</div>`;
   }
   startCooldown(t,30,'Next analysis in');
 }
@@ -1228,7 +1235,7 @@ Time: ${new Date().toLocaleString('en-US',{timeZone:'America/New_York'})} ET`;
 
   try{
     const d=await claudeRequest({
-      model:'claude-haiku-4-5-20251001', max_tokens:400,
+      model:'claude-3-5-haiku-20241022', max_tokens:400,
       system:sysCtx,
       messages:[...apiHistory,{role:'user',content:text}]
     });
@@ -1437,6 +1444,24 @@ setInterval(()=>{
     });
   }
 },1000);
+
+// ── CONNECTION TEST ───────────────────────────────────────────
+async function testConnection(t){
+  const cards=document.getElementById(`analysis-cards-${t}`);
+  cards.classList.add('visible');
+  cards.innerHTML='<div class="acard raw">🔌 Testing Claude connection…</div>';
+  try{
+    const r=await fetch('/api/test-claude');
+    const d=await r.json();
+    if(d.ok){
+      cards.innerHTML=`<div class="acard raw" style="border-color:rgba(34,197,94,.4)">✅ Claude connected! Model: ${d.model}<br>Reply: "${d.reply}"<br><br>Connection is working — if Run Full Analysis still fails, try again in a minute.</div>`;
+    } else {
+      cards.innerHTML=`<div class="acard raw" style="border-color:rgba(239,68,68,.4)">❌ Claude connection failed.<br><br>${d.error||JSON.stringify(d.anthropic_error||{},null,2)}<br><br>Most likely fix: Go to Vercel → your project → Settings → Environment Variables → add ANTHROPIC_API_KEY with your key from console.anthropic.com</div>`;
+    }
+  } catch(err){
+    cards.innerHTML=`<div class="acard raw" style="border-color:rgba(239,68,68,.4)">❌ Test failed: ${err.message}</div>`;
+  }
+}
 
 // ── INIT ──────────────────────────────────────────────────────
 async function init(){
