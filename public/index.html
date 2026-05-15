@@ -638,38 +638,21 @@ function parseCandleResponse(d){
 async function fetchCandles(t, tf){
   if(!finnhubToken) return null;
   const now=Math.floor(Date.now()/1000);
-
-  if(tf==='1D'){
-    // Walk back up to 5 calendar days to find the most recent trading session
-    for(let daysBack=0; daysBack<=4; daysBack++){
-      const day=new Date();
-      day.setDate(day.getDate()-daysBack);
-      day.setUTCHours(0,0,0,0);
-      const fromTs=Math.floor(day.getTime()/1000);
-      const toTs=fromTs+86400; // one calendar day window
-      try{
-        const r=await fetch(`https://finnhub.io/api/v1/stock/candle?symbol=${t}&resolution=5&from=${fromTs}&to=${toTs}&token=${finnhubToken}`);
-        const d=await r.json();
-        const candles=parseCandleResponse(d);
-        if(candles&&candles.length>=5) return candles;
-      } catch(_){}
-    }
-    return null;
-  }
-
-  let resolution, fromTs;
-  if(tf==='5D'){ resolution='30'; fromTs=now-5*24*3600; }
-  else          { resolution='D';  fromTs=now-31*24*3600; }
-
+  // Free-tier Finnhub only supports daily (D) candles for US stocks
+  // 1D → last 60 trading days, 5D → last 20 trading days, 1M → last 365 days
+  let fromTs;
+  if(tf==='1D')      fromTs=now-90*24*3600;
+  else if(tf==='5D') fromTs=now-30*24*3600;
+  else               fromTs=now-365*24*3600;
   try{
-    const r=await fetch(`https://finnhub.io/api/v1/stock/candle?symbol=${t}&resolution=${resolution}&from=${fromTs}&to=${now}&token=${finnhubToken}`);
+    const r=await fetch(`https://finnhub.io/api/v1/stock/candle?symbol=${t}&resolution=D&from=${fromTs}&to=${now}&token=${finnhubToken}`);
     const d=await r.json();
     return parseCandleResponse(d);
   } catch(_){ return null; }
 }
 
 function generateOHLC(t, tf){
-  const pts=tf==='1D'?78:tf==='5D'?130:200;
+  const pts=tf==='1D'?60:tf==='5D'?20:90;
   const {base,range,vol}=CHART_CFG[t];
   // Anchor to the last known real price; fall back to current base
   const anchor=prevClose[t]||base+(Math.random()-.5)*range;
@@ -728,8 +711,8 @@ async function renderChart(t, tf){
   const panelLbl=wrap.closest('.chart-panel')?.querySelector('.panel-label');
   if(panelLbl){
     panelLbl.innerHTML=isRealData
-      ?'Candlestick + VWAP &nbsp;<span style="color:var(--green);font-size:9px">● LIVE</span>'
-      :'Candlestick + VWAP &nbsp;<span style="color:var(--amber);font-size:9px">⚠ SIMULATED — Finnhub key not loaded</span>';
+      ?'Candlestick + VWAP &nbsp;<span style="color:var(--green);font-size:9px">● LIVE DATA</span>'
+      :'Candlestick + VWAP &nbsp;<span style="color:var(--amber);font-size:9px">⚠ SIMULATED — no Finnhub data returned</span>';
   }
 
   s.ohlcData=ohlc;
@@ -783,7 +766,7 @@ async function renderChart(t, tf){
   });
 
   // Build timestamps (lightweight-charts needs Unix seconds, ascending order)
-  const interval=tf==='1D'?300:tf==='5D'?1800:86400;
+  const interval=86400; // daily candles for all timeframes (free Finnhub tier)
   const nowTs=Math.floor(Date.now()/1000);
   const candleData=ohlc.map((bar,i)=>({
     time: bar.time || (nowTs - (ohlc.length-1-i)*interval),
@@ -816,7 +799,7 @@ async function renderChart(t, tf){
     },
     timeScale:{
       borderColor:'rgba(255,255,255,0.08)',
-      timeVisible:tf!=='1M',
+      timeVisible:true,
       secondsVisible:false,
       fixLeftEdge:true,
       fixRightEdge:true,
