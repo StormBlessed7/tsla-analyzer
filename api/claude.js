@@ -4,21 +4,29 @@ module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
+  const callAnthropic = () => fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': process.env.ANTHROPIC_API_KEY,
+      'anthropic-version': '2023-06-01',
+      'anthropic-beta': 'web-search-2025-03-05'
+    },
+    body: JSON.stringify(req.body)
+  });
+
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': process.env.ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
-        'anthropic-beta': 'web-search-2025-03-05'
-      },
-      body: JSON.stringify(req.body)
-    });
+    let response = await callAnthropic();
+
+    // Single automatic retry on 529 (Anthropic overloaded) after 2s
+    if (response.status === 529) {
+      await new Promise(r => setTimeout(r, 2000));
+      response = await callAnthropic();
+    }
 
     const data = await response.json();
     res.status(response.status).json(data);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-}
+};
