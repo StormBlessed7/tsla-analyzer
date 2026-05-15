@@ -36,6 +36,8 @@ body { font-family:'SF Mono','Fira Code','Consolas',monospace; background:var(--
 .controls { display:flex; gap:6px; }
 .tf-btn { font-size:11px; font-family:inherit; padding:4px 10px; border:0.5px solid var(--border2); border-radius:var(--radius); background:transparent; color:var(--text2); cursor:pointer; transition:all .15s; }
 .tf-btn.active,.tf-btn:hover { background:rgba(59,130,246,.15); color:var(--blue); border-color:var(--blue); }
+.zoom-btn { font-family:inherit; font-size:12px; font-weight:700; padding:3px 8px; border:0.5px solid var(--border2); border-radius:var(--radius); background:var(--bg3); color:var(--text2); cursor:pointer; transition:all .15s; margin-left:4px; line-height:1; }
+.zoom-btn:hover { background:rgba(59,130,246,.15); color:var(--blue); border-color:var(--blue); }
 
 /* badges */
 .session-badge { display:inline-flex; align-items:center; gap:4px; font-size:10px; padding:3px 8px; border-radius:12px; border:0.5px solid var(--border2); color:var(--text3); }
@@ -64,7 +66,7 @@ body { font-family:'SF Mono','Fira Code','Consolas',monospace; background:var(--
 .main-area { display:grid; grid-template-columns:1fr 300px; min-height:420px; }
 .chart-panel { border-right:0.5px solid var(--border); padding:14px; }
 .panel-label { font-size:10px; color:var(--text3); text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; }
-.chart-wrap { position:relative; height:220px; }
+.chart-wrap { position:relative; height:220px; cursor:crosshair; }
 .vol-bars { display:flex; align-items:flex-end; gap:2px; height:44px; margin-top:8px; }
 .vol-bar { flex:1; border-radius:1px 1px 0 0; }
 .indicators { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; padding-top:8px; border-top:0.5px solid var(--border); }
@@ -233,7 +235,7 @@ body { font-family:'SF Mono','Fira Code','Consolas',monospace; background:var(--
 .chat-send-btn:disabled { opacity:.35; cursor:not-allowed; }
 
 /* ─── PRE-MARKET INTELLIGENCE PANEL ─────────────────────────── */
-.pm-panel { padding:10px 14px; border-bottom:0.5px solid var(--border); }
+.pm-panel { padding:12px 14px; border-bottom:0.5px solid var(--border); border-top:2px solid rgba(245,158,11,0.45); background:rgba(245,158,11,0.03); }
 .pm-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
 .pm-mode-label { font-size:10px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; }
 .pm-mode-label.pre   { color:var(--amber); }
@@ -299,7 +301,15 @@ body { font-family:'SF Mono','Fira Code','Consolas',monospace; background:var(--
 
     <div class="main-area">
       <div class="chart-panel">
-        <div class="panel-label">Candlestick + VWAP</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <div class="panel-label" style="margin-bottom:0">Candlestick + VWAP</div>
+          <div style="display:flex;align-items:center">
+            <span style="font-size:9px;color:var(--text3);margin-right:6px">scroll to zoom · drag to pan</span>
+            <button class="zoom-btn" onclick="zoomChart('in','TSLA')" title="Zoom In">+</button>
+            <button class="zoom-btn" onclick="zoomChart('out','TSLA')" title="Zoom Out">−</button>
+            <button class="zoom-btn" onclick="resetChartZoom('TSLA')" title="Reset Zoom">↺</button>
+          </div>
+        </div>
         <div class="chart-wrap">
           <canvas id="priceChart-TSLA"></canvas>
         </div>
@@ -321,6 +331,7 @@ body { font-family:'SF Mono','Fira Code','Consolas',monospace; background:var(--
           <div style="font-size:10px;color:var(--text3);margin-top:5px" id="conf-label-TSLA"></div>
         </div>
         <div class="pm-panel" id="pm-panel-TSLA">
+          <div class="section-label" style="margin-bottom:6px;color:var(--amber);letter-spacing:1.5px">Pre-Market Intelligence</div>
           <div class="pm-header">
             <div class="pm-mode-label closed" id="pm-label-TSLA">Market Status</div>
             <div class="pm-refresh" id="pm-refresh-TSLA"></div>
@@ -408,7 +419,15 @@ body { font-family:'SF Mono','Fira Code','Consolas',monospace; background:var(--
 
     <div class="main-area">
       <div class="chart-panel">
-        <div class="panel-label">Candlestick + VWAP</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <div class="panel-label" style="margin-bottom:0">Candlestick + VWAP</div>
+          <div style="display:flex;align-items:center">
+            <span style="font-size:9px;color:var(--text3);margin-right:6px">scroll to zoom · drag to pan</span>
+            <button class="zoom-btn" onclick="zoomChart('in','SPY')" title="Zoom In">+</button>
+            <button class="zoom-btn" onclick="zoomChart('out','SPY')" title="Zoom Out">−</button>
+            <button class="zoom-btn" onclick="resetChartZoom('SPY')" title="Reset Zoom">↺</button>
+          </div>
+        </div>
         <div class="chart-wrap">
           <canvas id="priceChart-SPY"></canvas>
         </div>
@@ -430,6 +449,7 @@ body { font-family:'SF Mono','Fira Code','Consolas',monospace; background:var(--
           <div style="font-size:10px;color:var(--text3);margin-top:5px" id="conf-label-SPY"></div>
         </div>
         <div class="pm-panel" id="pm-panel-SPY">
+          <div class="section-label" style="margin-bottom:6px;color:var(--amber);letter-spacing:1.5px">Pre-Market Intelligence</div>
           <div class="pm-header">
             <div class="pm-mode-label closed" id="pm-label-SPY">Market Status</div>
             <div class="pm-refresh" id="pm-refresh-SPY"></div>
@@ -517,6 +537,8 @@ const CHART_CFG = {
   TSLA:{ base:447, range:20, vol:8, lo:200, hi:800 },
   SPY: { base:562, range:10, vol:3, lo:400, hi:700 },
 };
+const AVG_VOL = { TSLA:90e6, SPY:75e6 }; // avg daily share volume
+let activeDrag = null;
 
 const state = {
   TSLA:{ chart:null, ohlcData:null, vwap:0, srLevels:[], newsData:[], tradeLines:null, runCount:0, tf:'1D', pos:'call', newsFetched:false },
@@ -1511,34 +1533,39 @@ function updatePMPanel(t, q){
       </div>`;
   } else if(mode==='power'){
     const orRange=pm.orHigh&&pm.orLow?`$${pm.orLow.toFixed(2)}–$${pm.orHigh.toFixed(2)}`:'Building…';
-    const totalVol=state[t].ohlcData?state[t].ohlcData.reduce((a,b)=>a+(b.volume||0),0):0;
+    const vs=getVolStr(t);
     contentEl.innerHTML=`
       <div class="pm-grid">
         <div class="pm-cell">Live Price<span class="pm-val">${price?'$'+price.toFixed(2):'–'}</span></div>
         <div class="pm-cell">Open Range<span class="pm-val amb">${orRange}</span></div>
         <div class="pm-cell">Session High<span class="pm-val up">${pm.sessionHigh?'$'+pm.sessionHigh.toFixed(2):'–'}</span></div>
         <div class="pm-cell">Session Low<span class="pm-val down">${pm.sessionLow?'$'+pm.sessionLow.toFixed(2):'–'}</span></div>
+        ${vs?`<div class="pm-cell" style="grid-column:1/-1">Volume vs Avg<span class="pm-val ${vs.cls}">${vs.str} <span style="opacity:.7">(${vs.pct}%)</span></span></div>`:''}
       </div>`;
   } else if(mode==='open'){
     const vwap=state[t].vwap;
     const vd=vwap&&price?((price-vwap)/vwap*100):null;
+    const vs=getVolStr(t);
     contentEl.innerHTML=`
       <div class="pm-grid">
         <div class="pm-cell">Live Price<span class="pm-val">${price?'$'+price.toFixed(2):'–'}</span></div>
         <div class="pm-cell">vs VWAP<span class="pm-val ${vd==null?'':vd>=0?'up':'down'}">${vd!=null?(vd>=0?'+':'')+vd.toFixed(2)+'%':'–'}</span></div>
         <div class="pm-cell">Day High<span class="pm-val up">${pm.sessionHigh?'$'+pm.sessionHigh.toFixed(2):'–'}</span></div>
         <div class="pm-cell">Day Low<span class="pm-val down">${pm.sessionLow?'$'+pm.sessionLow.toFixed(2):'–'}</span></div>
+        ${vs?`<div class="pm-cell" style="grid-column:1/-1">Volume vs Avg<span class="pm-val ${vs.cls}">${vs.str} <span style="opacity:.7">(${vs.pct}%)</span></span></div>`:''}
       </div>`;
   } else if(mode==='after'){
     const ch=pc&&price?price-pc:null;
     const pct=pc&&price?((price-pc)/pc*100):null;
     const isUp=ch>=0;
+    const vs=getVolStr(t);
     contentEl.innerHTML=`
       <div class="pm-grid">
         <div class="pm-cell">AH Price<span class="pm-val">${price?'$'+price.toFixed(2):'–'}</span></div>
         <div class="pm-cell">AH Change<span class="pm-val ${ch==null?'':isUp?'up':'down'}">${pct!=null?(isUp?'+':'')+pct.toFixed(2)+'%':'–'}</span></div>
         <div class="pm-cell">Day Close<span class="pm-val">${pc?'$'+pc.toFixed(2):'–'}</span></div>
         <div class="pm-cell">Day Range<span class="pm-val">${pm.sessionHigh&&pm.sessionLow?'$'+pm.sessionLow.toFixed(0)+'–$'+pm.sessionHigh.toFixed(0):'–'}</span></div>
+        ${vs?`<div class="pm-cell" style="grid-column:1/-1">Volume (final)<span class="pm-val ${vs.cls}">${vs.str} <span style="opacity:.7">(${vs.pct}%)</span></span></div>`:''}
       </div>`;
   } else {
     contentEl.innerHTML=`<div style="font-size:10px;color:var(--text3);padding:2px 0">Market closed. Opens 9:30 AM ET.</div>`;
@@ -1593,6 +1620,102 @@ function startPowerHourAuto(){
   }, 10*60*1000);
 }
 
+// ── CHART ZOOM / PAN ─────────────────────────────────────────
+function initZoomPan(t){
+  const canvas=document.getElementById(`priceChart-${t}`);
+  if(!canvas) return;
+
+  // Scroll-wheel zoom (centered on cursor position)
+  canvas.addEventListener('wheel',e=>{
+    e.preventDefault();
+    const chart=state[t].chart; if(!chart||!chart.chartArea) return;
+    const xs=chart.scales.x;
+    // Map cursor X pixel to data coordinate
+    const rect=canvas.getBoundingClientRect();
+    const px=e.clientX-rect.left-chart.chartArea.left;
+    const pxTotal=chart.chartArea.right-chart.chartArea.left;
+    const frac=Math.max(0,Math.min(1,px/pxTotal));
+    const cursor=xs.min+(xs.max-xs.min)*frac;
+    const factor=e.deltaY>0?1.25:0.8;
+    const len=(state[t].ohlcData?.length||78);
+    const newRange=Math.min((xs.max-xs.min)*factor,len+1);
+    let nMin=cursor-frac*newRange;
+    let nMax=cursor+(1-frac)*newRange;
+    if(nMin<-0.5){nMin=-0.5; nMax=nMin+newRange;}
+    if(nMax>len-0.5){nMax=len-0.5; nMin=nMax-newRange;}
+    chart.options.scales.x.min=nMin;
+    chart.options.scales.x.max=nMax;
+    chart.update('none');
+  },{passive:false});
+
+  // Drag to pan
+  canvas.addEventListener('mousedown',e=>{
+    const chart=state[t].chart; if(!chart) return;
+    activeDrag={t,startX:e.clientX,startMin:chart.scales.x.min,startMax:chart.scales.x.max};
+    canvas.style.cursor='grabbing';
+    e.preventDefault();
+  });
+
+  // Double-click resets zoom
+  canvas.addEventListener('dblclick',()=>resetChartZoom(t));
+}
+
+document.addEventListener('mousemove',e=>{
+  if(!activeDrag) return;
+  const {t,startX,startMin,startMax}=activeDrag;
+  const chart=state[t].chart; if(!chart||!chart.chartArea) return;
+  const xs=chart.scales.x;
+  const ppu=(chart.chartArea.right-chart.chartArea.left)/(xs.max-xs.min);
+  const delta=-(e.clientX-startX)/ppu;
+  const len=(state[t].ohlcData?.length||78);
+  const range=startMax-startMin;
+  let nMin=startMin+delta, nMax=startMax+delta;
+  if(nMin<-0.5){nMin=-0.5; nMax=nMin+range;}
+  if(nMax>len-0.5){nMax=len-0.5; nMin=nMax-range;}
+  chart.options.scales.x.min=nMin;
+  chart.options.scales.x.max=nMax;
+  chart.update('none');
+});
+
+document.addEventListener('mouseup',()=>{
+  if(!activeDrag) return;
+  const canvas=document.getElementById(`priceChart-${activeDrag.t}`);
+  if(canvas) canvas.style.cursor='crosshair';
+  activeDrag=null;
+});
+
+function zoomChart(dir,t){
+  const chart=state[t].chart; if(!chart) return;
+  const xs=chart.scales.x;
+  const center=(xs.min+xs.max)/2;
+  const factor=dir==='in'?0.65:1.5;
+  const len=(state[t].ohlcData?.length||78);
+  const newRange=Math.min((xs.max-xs.min)*factor,len+1);
+  const nMin=Math.max(-0.5,center-newRange/2);
+  const nMax=Math.min(len-0.5,center+newRange/2);
+  chart.options.scales.x.min=nMin;
+  chart.options.scales.x.max=nMax;
+  chart.update('none');
+}
+
+function resetChartZoom(t){
+  const chart=state[t].chart; if(!chart) return;
+  const len=(state[t].ohlcData?.length||78);
+  chart.options.scales.x.min=-0.5;
+  chart.options.scales.x.max=len-0.5;
+  chart.update('none');
+}
+
+// ── VOLUME HELPER FOR PM PANEL ────────────────────────────────
+function getVolStr(t){
+  const ohlc=state[t].ohlcData; if(!ohlc) return null;
+  const vol=ohlc.reduce((a,b)=>a+(b.volume||0),0); if(!vol) return null;
+  const avg=AVG_VOL[t];
+  const pct=Math.round(vol/avg*100);
+  const fmt=v=>v>=1e6?(v/1e6).toFixed(1)+'M':v>=1e3?(v/1e3).toFixed(0)+'K':'–';
+  return{str:`${fmt(vol)} / ${fmt(avg)}`,cls:pct>=80?'up':pct>=50?'amb':'down',pct};
+}
+
 // Live countdown tick every second during pre-market
 setInterval(()=>{
   if(getMarketMode()==='pre'){
@@ -1621,6 +1744,9 @@ async function init(){
   setTimeout(()=>fetchNews('TSLA'), 2000);
   setTimeout(fetchFearGreed, 1000);
   setTimeout(()=>{ renderOptionsFlow('TSLA'); renderOptionsFlow('SPY'); }, 500);
+  // Attach zoom/pan event listeners to chart canvases
+  initZoomPan('TSLA');
+  initZoomPan('SPY');
 }
 init();
 </script>
