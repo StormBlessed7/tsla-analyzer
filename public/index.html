@@ -1058,14 +1058,12 @@ BEAR_CASE: [2-3 sentences in plain everyday English — why bears think the mark
 };
 
 const ANALYSIS_USR={
-  TSLA:(pos,pills,news)=>`Analyze TSLA for a ${pos.toUpperCase()} position. Date: ${new Date().toDateString()}.
-Technicals: ${pills}
-Headlines: ${news}
-Search for: latest TSLA news today, Elon Musk statements, analyst targets, delivery updates, FSD/Robotaxi news, macro (Fed/CPI/SPY), unusual options flow. Full analysis.`,
-  SPY:(pos,pills,news)=>`Analyze SPY for a ${pos.toUpperCase()} position. Date: ${new Date().toDateString()}.
-Technicals: ${pills}
-Headlines: ${news}
-Search for: latest S&P 500 news, Fed/FOMC statements, CPI/PCE/jobs data, yields/DXY, VIX, advance/decline, sector leaders/laggards, major earnings. Full macro analysis.`,
+  TSLA:(pos,pills)=>`Analyze TSLA for a ${pos.toUpperCase()} position. Date: ${new Date().toDateString()}.
+Live technicals: ${pills}
+Use your knowledge of Tesla fundamentals, recent Elon Musk activity, FSD/Robotaxi progress, delivery trends, macro environment (Fed policy, yields, SPY trend), and current market sentiment. Give a complete, actionable analysis with specific price levels.`,
+  SPY:(pos,pills)=>`Analyze SPY for a ${pos.toUpperCase()} position. Date: ${new Date().toDateString()}.
+Live technicals: ${pills}
+Use your knowledge of current macro environment: Fed/FOMC stance, CPI/inflation trend, treasury yields, VIX level, sector rotation, and S&P 500 key levels. Give a complete, actionable analysis with specific price levels.`,
 };
 
 async function runAnalysis(t){
@@ -1075,21 +1073,17 @@ async function runAnalysis(t){
 
   const cards=document.getElementById(`analysis-cards-${t}`);
   cards.classList.add('visible');
-  cards.innerHTML='<div class="acard raw">Claude is searching live news, analyst calls, and chart signals…</div>';
+  cards.innerHTML='<div class="acard raw">Claude is analyzing chart data and market conditions…</div>';
   el('bull-bear',t).classList.remove('visible');
   document.getElementById(`rr-${t}`).style.display='none';
 
   const pills=el('pills',t).innerText;
-  const newsCtx=s.newsData.length>0
-    ? s.newsData.map(n=>`"${n.headline}" (${n.sentiment}, ${n.impact} impact)`).join('; ')
-    : `Search for latest ${t} news.`;
 
   try{
     const d=await claudeRequest({
-      model:'claude-sonnet-4-5', max_tokens:1500,
-      tools:[{type:'web_search_20250305',name:'web_search'}],
+      model:'claude-haiku-4-5-20251001', max_tokens:1000,
       system:ANALYSIS_SYS[t](s.pos),
-      messages:[{role:'user',content:ANALYSIS_USR[t](s.pos,pills,newsCtx)}]
+      messages:[{role:'user',content:ANALYSIS_USR[t](s.pos,pills)}]
     });
     const text=d.content.map(i=>i.text||'').filter(Boolean).join('\n');
 
@@ -1227,17 +1221,14 @@ Ticker: ${t} | Price: ${priceEl?.textContent||'–'} | Change: ${changeEl?.textC
 Session: ${mode} | Signal: ${sigEl?.textContent||'Awaiting'}
 Indicators: ${pillsEl?.innerText||'–'}
 Trade lines: ${tradeCtx}
-Recent news: ${newsSnippet}
-Time: ${new Date().toLocaleString('en-US',{timeZone:'America/New_York'})} ET
-You have access to real-time web search. Use it if the user asks about live prices, news, or current events.`;
+Time: ${new Date().toLocaleString('en-US',{timeZone:'America/New_York'})} ET`;
 
   // Last 4 exchanges for API context (skip last user msg which we send separately)
   const apiHistory=chatState[t].history.slice(-9,-1).map(m=>({role:m.role==='assistant'?'assistant':'user',content:m.content}));
 
   try{
     const d=await claudeRequest({
-      model:'claude-sonnet-4-5', max_tokens:500,
-      tools:[{type:'web_search_20250305',name:'web_search'}],
+      model:'claude-haiku-4-5-20251001', max_tokens:400,
       system:sysCtx,
       messages:[...apiHistory,{role:'user',content:text}]
     });
