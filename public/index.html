@@ -99,22 +99,6 @@ body { font-family:'SF Mono','Fira Code','Consolas',monospace; background:var(--
 .sdot.neg { background:var(--red); }
 .sdot.neu { background:var(--amber); }
 
-/* insights row: fear & greed + options flow */
-.insights-row { display:grid; grid-template-columns:220px 1fr; border-top:0.5px solid var(--border); }
-.fg-panel { padding:12px 14px; border-right:0.5px solid var(--border); }
-.fg-canvas { width:100%; height:90px; display:block; }
-.fg-value-row { display:flex; justify-content:space-between; align-items:baseline; margin-top:4px; }
-.fg-num { font-size:20px; font-weight:700; }
-.fg-label { font-size:10px; text-transform:uppercase; letter-spacing:1px; }
-.of-panel { padding:12px 14px; overflow-x:auto; }
-.flow-table { width:100%; border-collapse:collapse; font-size:10px; }
-.flow-table th { color:var(--text3); text-transform:uppercase; font-weight:400; padding:2px 6px 4px; text-align:left; white-space:nowrap; }
-.flow-table td { padding:3px 6px; border-top:0.5px solid var(--border); white-space:nowrap; }
-.flow-call { color:var(--green); font-weight:700; }
-.flow-put { color:var(--red); font-weight:700; }
-.flow-tag { font-size:9px; padding:1px 5px; border-radius:4px; }
-.flow-tag.large { background:rgba(245,158,11,.15); color:var(--amber); }
-.flow-tag.sweep { background:rgba(59,130,246,.15); color:var(--blue); }
 
 /* analyze section */
 .analyze-section { padding:14px 20px; border-top:0.5px solid var(--border); background:var(--bg3); }
@@ -169,8 +153,6 @@ body { font-family:'SF Mono','Fira Code','Consolas',monospace; background:var(--
   .main-area { grid-template-columns:1fr; }
   .metrics-row { grid-template-columns:repeat(2,1fr); }
   .side-panel { border-top:0.5px solid var(--border); }
-  .insights-row { grid-template-columns:1fr; }
-  .fg-panel { border-right:none; border-bottom:0.5px solid var(--border); }
   .bull-bear-row.visible { grid-template-columns:1fr; }
   .rr-grid { grid-template-columns:repeat(2,1fr); }
 }
@@ -338,23 +320,8 @@ body { font-family:'SF Mono','Fira Code','Consolas',monospace; background:var(--
         </div>
         <div class="side-section" style="flex:1;overflow-y:auto">
           <div class="section-label">Live News Sentiment</div>
-          <div id="news-feed-TSLA"><div style="font-size:11px;color:var(--text3)">Fetching latest TSLA news…</div></div>
+          <div id="news-feed-TSLA"><div style="font-size:11px;color:var(--text3)">Run Full Analysis to load news.</div></div>
         </div>
-      </div>
-    </div>
-
-    <div class="insights-row">
-      <div class="fg-panel">
-        <div class="section-label">Fear &amp; Greed</div>
-        <canvas class="fg-canvas" id="fg-TSLA"></canvas>
-        <div class="fg-value-row">
-          <span class="fg-num" id="fg-num-TSLA">–</span>
-          <span class="fg-label" id="fg-label-TSLA">–</span>
-        </div>
-      </div>
-      <div class="of-panel">
-        <div class="section-label">Options Flow — Unusual Activity</div>
-        <div id="flow-TSLA"><div style="font-size:11px;color:var(--text3)">Loading…</div></div>
       </div>
     </div>
 
@@ -454,23 +421,8 @@ body { font-family:'SF Mono','Fira Code','Consolas',monospace; background:var(--
         </div>
         <div class="side-section" style="flex:1;overflow-y:auto">
           <div class="section-label">Live News Sentiment</div>
-          <div id="news-feed-SPY"><div style="font-size:11px;color:var(--text3)">Fetching macro news…</div></div>
+          <div id="news-feed-SPY"><div style="font-size:11px;color:var(--text3)">Run Full Analysis to load news.</div></div>
         </div>
-      </div>
-    </div>
-
-    <div class="insights-row">
-      <div class="fg-panel">
-        <div class="section-label">Fear &amp; Greed</div>
-        <canvas class="fg-canvas" id="fg-SPY"></canvas>
-        <div class="fg-value-row">
-          <span class="fg-num" id="fg-num-SPY">–</span>
-          <span class="fg-label" id="fg-label-SPY">–</span>
-        </div>
-      </div>
-      <div class="of-panel">
-        <div class="section-label">Options Flow — Unusual Activity</div>
-        <div id="flow-SPY"><div style="font-size:11px;color:var(--text3)">Loading…</div></div>
       </div>
     </div>
 
@@ -536,13 +488,12 @@ const CHART_CFG = {
 const AVG_VOL = { TSLA:90e6, SPY:75e6 }; // avg daily share volume
 
 const state = {
-  TSLA:{ chart:null, candleSeries:null, ohlcData:null, vwap:0, srLevels:[], srLines:[], vwapLine:null, entryLine:null, tpLine:null, slLine:null, newsData:[], tradeLines:null, runCount:0, tf:'1D', pos:'call', newsFetched:false },
-  SPY: { chart:null, candleSeries:null, ohlcData:null, vwap:0, srLevels:[], srLines:[], vwapLine:null, entryLine:null, tpLine:null, slLine:null, newsData:[], tradeLines:null, runCount:0, tf:'1D', pos:'call', newsFetched:false },
+  TSLA:{ chart:null, candleSeries:null, ohlcData:null, vwap:0, srLevels:[], srLines:[], vwapLine:null, entryLine:null, tpLine:null, slLine:null, newsData:[], tradeLines:null, runCount:0, tf:'1D', pos:'call' },
+  SPY: { chart:null, candleSeries:null, ohlcData:null, vwap:0, srLevels:[], srLines:[], vwapLine:null, entryLine:null, tpLine:null, slLine:null, newsData:[], tradeLines:null, runCount:0, tf:'1D', pos:'call' },
 };
 let activeTicker = 'TSLA';
 let finnhubToken = null, finnhubWS = null;
 const prevClose = { TSLA:null, SPY:null };
-let fearGreedValue = null;
 
 function el(id, t){ return document.getElementById(`${id}-${t}`); }
 
@@ -587,9 +538,6 @@ function switchTab(t){
   document.getElementById(`tab-${t}`).classList.add('active');
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.ticker === t));
   if(!state[t].chart) renderChart(t, state[t].tf);
-  if(!state[t].newsFetched){ state[t].newsFetched=true; setTimeout(()=>fetchNews(t),500); }
-  if(fearGreedValue !== null) animateFearGreed(t, fearGreedValue);
-  renderOptionsFlow(t);
   // Restore Ask Claude panel state for this ticker
   const panel = document.getElementById('claude-panel');
   const tabBtn = document.getElementById('claude-tab-btn');
@@ -864,108 +812,6 @@ function updateTradeLines(t){
   if(tl.stop)   s.slLine   =s.candleSeries.createPriceLine({price:tl.stop,  color:'#ef4444',lineWidth:1.5,lineStyle:LightweightCharts.LineStyle.Dashed,axisLabelVisible:true,title:'SL'});
 }
 
-// ── FEAR & GREED GAUGE ────────────────────────────────────────
-function fgColor(v){ if(v<=25)return'#ef4444';if(v<=45)return'#f97316';if(v<=55)return'#f59e0b';if(v<=75)return'#84cc16';return'#22c55e'; }
-function fgText(v){ if(v<=25)return'EXTREME FEAR';if(v<=45)return'FEAR';if(v<=55)return'NEUTRAL';if(v<=75)return'GREED';return'EXTREME GREED'; }
-
-function drawFearGreed(ticker, value){
-  const canvas=document.getElementById(`fg-${ticker}`);
-  if(!canvas) return;
-  const dpr=window.devicePixelRatio||1;
-  canvas.width=canvas.offsetWidth*dpr||200*dpr;
-  canvas.height=90*dpr;
-  canvas.style.height='90px';
-  const ctx=canvas.getContext('2d');
-  ctx.scale(dpr,dpr);
-  const W=canvas.offsetWidth||200, H=90;
-  const cx=W/2, cy=H-8, r=Math.min(cx-12,cy-4)*0.88;
-  ctx.clearRect(0,0,W,H);
-  const segs=100;
-  for(let i=0;i<segs;i++){
-    const a0=Math.PI+i*(Math.PI/segs);
-    const a1=a0+Math.PI/segs+.01;
-    const frac=i/segs;
-    let col;
-    if(frac<.25)      col=`rgba(239,68,68,${.4+frac*2})`;
-    else if(frac<.5)  col=`rgba(245,158,11,${.5+frac})`;
-    else if(frac<.75) col=`rgba(132,204,22,${.5+frac})`;
-    else              col=`rgba(34,197,94,${.5+frac})`;
-    ctx.beginPath(); ctx.arc(cx,cy,r,a0,a1);
-    ctx.strokeStyle=col; ctx.lineWidth=10; ctx.stroke();
-  }
-  const angle=Math.PI+(value/100)*Math.PI;
-  ctx.save();
-  ctx.strokeStyle='#f0f0f0'; ctx.lineWidth=2.5;
-  ctx.beginPath(); ctx.moveTo(cx,cy);
-  ctx.lineTo(cx+(r-12)*Math.cos(angle), cy+(r-12)*Math.sin(angle));
-  ctx.stroke();
-  ctx.beginPath(); ctx.arc(cx,cy,4,0,Math.PI*2);
-  ctx.fillStyle='#f0f0f0'; ctx.fill();
-  ctx.restore();
-  const numEl=document.getElementById(`fg-num-${ticker}`);
-  const lblEl=document.getElementById(`fg-label-${ticker}`);
-  if(numEl){ numEl.textContent=Math.round(value); numEl.style.color=fgColor(value); }
-  if(lblEl){ lblEl.textContent=fgText(value); lblEl.style.color=fgColor(value); }
-}
-
-function animateFearGreed(ticker, targetValue, duration=1500){
-  const startTime=performance.now();
-  function step(now){
-    const progress=Math.min((now-startTime)/duration,1);
-    const eased=1-Math.pow(1-progress,3);
-    drawFearGreed(ticker, eased*targetValue);
-    if(progress<1) requestAnimationFrame(step);
-  }
-  requestAnimationFrame(step);
-}
-
-async function fetchFearGreed(){
-  try{
-    const r=await fetch('https://api.alternative.me/fng/?limit=1');
-    const d=await r.json();
-    fearGreedValue=parseInt(d.data[0].value);
-  } catch(_){
-    // Calculate from real price action as fallback
-    const s=state['TSLA'];
-    if(s.ohlcData&&s.ohlcData.length>14){
-      const closes=s.ohlcData.map(c=>c.close);
-      const rsi=calcRSI(closes,14);
-      const macd=calcMACD(closes);
-      const momentum=(closes[closes.length-1]-closes[0])/closes[0]*100;
-      fearGreedValue=Math.round(Math.min(100,Math.max(0,rsi*.5+(macd>0?60:40)*.25+(momentum>0?65:35)*.25)));
-    } else {
-      fearGreedValue=45;
-    }
-  }
-  animateFearGreed('TSLA',fearGreedValue);
-  animateFearGreed('SPY',fearGreedValue);
-}
-
-// ── OPTIONS FLOW ──────────────────────────────────────────────
-function renderOptionsFlow(t){
-  const price = prevClose[t] || (t==='TSLA'?250:515);
-  const rows=[];
-  for(let i=0;i<6;i++){
-    const isCall=Math.random()>.45;
-    const strike=Math.round(price*(1+(Math.round((Math.random()-.5)*8)*.0025)));
-    const dte=[0,1,2,7,14,30][Math.floor(Math.random()*6)];
-    const prem=(Math.random()*480+30).toFixed(0);
-    const qty=Math.floor(Math.random()*900+100);
-    const tag=qty>600?'LARGE':Math.random()>.6?'SWEEP':'';
-    rows.push({isCall,strike,dte,prem,qty,tag});
-  }
-  document.getElementById(`flow-${t}`).innerHTML=`
-  <table class="flow-table">
-    <thead><tr><th>Type</th><th>Strike</th><th>Exp</th><th>Premium</th><th>Qty</th><th></th></tr></thead>
-    <tbody>${rows.map(r=>`<tr${r.tag==='LARGE'?' style="background:rgba(245,158,11,.04)"':''}>
-      <td class="${r.isCall?'flow-call':'flow-put'}">${r.isCall?'CALL':'PUT'}</td>
-      <td>$${r.strike}</td><td>${r.dte}DTE</td>
-      <td>$${r.prem}K</td><td>${r.qty}</td>
-      <td>${r.tag?`<span class="flow-tag ${r.tag.toLowerCase()}">${r.tag}</span>`:''}</td>
-    </tr>`).join('')}
-    </tbody>
-  </table>`;
-}
 
 // ── RISK / REWARD CALCULATOR ──────────────────────────────────
 function calcRR(t){
@@ -1138,28 +984,6 @@ async function initFinnhub(){
   connectFinnhub();
 }
 
-// ── NEWS ──────────────────────────────────────────────────────
-const NEWS_SYS={
-  TSLA:`You are a financial news aggregator. Search for the latest Tesla/TSLA news from the past 24-48 hours. Focus on: deliveries, Elon Musk statements, earnings, FSD/Robotaxi, recalls, analyst upgrades/downgrades. Return ONLY a raw JSON array, no markdown: [{"headline":"...","source":"...","sentiment":"positive"|"negative"|"neutral","time":"Xh ago","impact":"high"|"medium"|"low"}] — 5-6 items.`,
-  SPY:`You are a financial news aggregator. Search for the latest S&P 500/macro market news from the past 24-48 hours. Focus on: Fed/FOMC, CPI/PCE/jobs, GDP, treasury yields, sector rotation, VIX. Return ONLY a raw JSON array, no markdown: [{"headline":"...","source":"...","sentiment":"positive"|"negative"|"neutral","time":"Xh ago","impact":"high"|"medium"|"low"}] — 5-6 items.`,
-};
-const NEWS_USR={
-  TSLA:'Get latest Tesla TSLA stock news for day trading today.',
-  SPY:'Get latest S&P 500 macro and market-moving news for day trading today.',
-};
-async function fetchNews(t){
-  const feed=el('news-feed',t);
-  try{
-    const d=await claudeRequest({model:'claude-sonnet-4-5',max_tokens:1000,tools:[{type:'web_search_20250305',name:'web_search'}],system:NEWS_SYS[t],messages:[{role:'user',content:NEWS_USR[t]}]});
-    const text=d.content.map(i=>i.text||'').join('\n');
-    const s=text.indexOf('['),e=text.lastIndexOf(']');
-    state[t].newsData=JSON.parse(text.substring(s,e+1));
-    feed.innerHTML=state[t].newsData.map(n=>`<div class="news-item"><div class="news-headline">${n.headline}</div><div class="news-meta"><span class="sdot ${n.sentiment==='positive'?'pos':n.sentiment==='negative'?'neg':'neu'}"></span><span>${n.source}</span><span>${n.time}</span>${n.impact==='high'?'<span style="color:var(--red);font-weight:600">HIGH IMPACT</span>':''}</div></div>`).join('');
-  } catch(e){
-    feed.innerHTML=`<div style="font-size:11px;color:var(--text3)">${e.message==='RATE_LIMITED'?'Rate limited — try again soon.':'News load failed — run Full Analysis to fetch inline.'}</div>`;
-  }
-}
-
 // ── CLAUDE API ────────────────────────────────────────────────
 async function claudeRequest(body){
   const r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
@@ -1168,11 +992,11 @@ async function claudeRequest(body){
   return r.json();
 }
 
-function startCooldown(t,secs){
+function startCooldown(t, secs=30, label='Ready in'){
   const btn=el('analyze-btn',t); btn.disabled=true;
   let rem=secs;
-  btn.textContent=`⏳ Rate limited — wait ${rem}s`;
-  const iv=setInterval(()=>{ rem--; if(rem<=0){ clearInterval(iv); btn.disabled=false; btn.textContent='⚡ REFRESH ANALYSIS'; } else btn.textContent=`⏳ Rate limited — wait ${rem}s`; },1000);
+  btn.textContent=`⏳ ${label} ${rem}s`;
+  const iv=setInterval(()=>{ rem--; if(rem<=0){ clearInterval(iv); btn.disabled=false; btn.textContent='⚡ RUN FULL AI ANALYSIS'; } else btn.textContent=`⏳ ${label} ${rem}s`; },1000);
 }
 
 const ANALYSIS_SYS={
@@ -1307,17 +1131,23 @@ async function runAnalysis(t){
       el('bull-bear',t).classList.add('visible');
     }
 
-    // Refresh options flow with post-analysis context
-    renderOptionsFlow(t);
+    // Populate news feed from catalyst section of analysis
+    const catalystM=text.match(/📰[^\n]*\n([\s\S]*?)(?=⚠️|🕐|BULL_CASE|$)/);
+    if(catalystM){
+      const lines=catalystM[1].trim().split('\n').filter(l=>l.startsWith('•')).map(l=>l.replace(/^•\s*/,''));
+      if(lines.length){
+        el('news-feed',t).innerHTML=lines.map(l=>`<div class="news-item"><div class="news-headline">${l}</div><div class="news-meta"><span style="font-size:10px;color:var(--text3)">From Full Analysis · ${new Date().toLocaleTimeString()}</span></div></div>`).join('');
+      }
+    }
 
   } catch(e){
     if(e.message==='RATE_LIMITED'){
-      cards.innerHTML='<div class="acard raw">⏳ Rate limited — Anthropic API is throttling requests. The button re-enables in 60 seconds.</div>';
-      startCooldown(t,60); return;
+      cards.innerHTML='<div class="acard raw">⏳ Rate limited — Anthropic API is throttling requests. Try again in 30 seconds.</div>';
+      startCooldown(t,30,'Rate limited —'); return;
     }
     cards.innerHTML='<div class="acard raw">Analysis failed. Check your ANTHROPIC_API_KEY in Vercel environment variables.</div>';
   }
-  btn.disabled=false; btn.textContent='⚡ REFRESH ANALYSIS';
+  startCooldown(t,30,'Next analysis in');
 }
 
 // ── ASK CLAUDE PANEL ──────────────────────────────────────────
@@ -1625,16 +1455,12 @@ async function init(){
   setInterval(updateEarnings, 60000);
   // Load Finnhub token + real quotes first, then render chart with real candle data
   await initFinnhub();
-  state.TSLA.newsFetched=true;
   await renderChart('TSLA','1D');
   // Initial PM panel render (quotes already loaded by initFinnhub)
   ['TSLA','SPY'].forEach(t=>updatePMPanel(t,null));
   // Start adaptive Finnhub refresh + power-hour auto-analysis
   schedulePMRefresh();
   if(getMarketMode()==='power') startPowerHourAuto();
-  setTimeout(()=>fetchNews('TSLA'), 2000);
-  setTimeout(fetchFearGreed, 1000);
-  setTimeout(()=>{ renderOptionsFlow('TSLA'); renderOptionsFlow('SPY'); }, 500);
 }
 init();
 </script>
