@@ -636,16 +636,13 @@ function parseCandleResponse(d){
 }
 
 async function fetchCandles(t, tf){
-  if(!finnhubToken) return null;
   const now=Math.floor(Date.now()/1000);
-  // Free-tier Finnhub only supports daily (D) candles for US stocks
-  // 1D → last 60 trading days, 5D → last 20 trading days, 1M → last 365 days
   let fromTs;
   if(tf==='1D')      fromTs=now-90*24*3600;
   else if(tf==='5D') fromTs=now-30*24*3600;
   else               fromTs=now-365*24*3600;
   try{
-    const r=await fetch(`https://finnhub.io/api/v1/stock/candle?symbol=${t}&resolution=D&from=${fromTs}&to=${now}&token=${finnhubToken}`);
+    const r=await fetch(`/api/candles?symbol=${t}&resolution=D&from=${fromTs}&to=${now}`);
     const d=await r.json();
     return parseCandleResponse(d);
   } catch(_){ return null; }
