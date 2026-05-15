@@ -1,4 +1,9 @@
 {
   "version": 2,
-  "outputDirectory": "public"
+  "outputDirectory": "public",
+  "functions": {
+    "api/claude.js": {
+      "maxDuration": 60
+    }
+  }
 }

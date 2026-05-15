@@ -4,6 +4,9 @@ module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  const delays = [1000, 2000, 4000]; // backoff delays between retries
+
   const callAnthropic = () => fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -18,9 +21,9 @@ module.exports = async function handler(req, res) {
   try {
     let response = await callAnthropic();
 
-    // Single automatic retry on 529 (Anthropic overloaded) after 2s
-    if (response.status === 529) {
-      await new Promise(r => setTimeout(r, 2000));
+    // Up to 3 retries on 529 (Anthropic overloaded) with exponential backoff
+    for (let i = 0; i < delays.length && response.status === 529; i++) {
+      await sleep(delays[i]);
       response = await callAnthropic();
     }
 
