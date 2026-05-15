@@ -1087,7 +1087,7 @@ async function runAnalysis(t){
 
   try{
     const d=await claudeRequest({
-      model:'claude-3-5-haiku-20241022', max_tokens:1000,
+      model:'claude-3-haiku-20240307', max_tokens:1000,
       system:ANALYSIS_SYS[t](s.pos),
       messages:[{role:'user',content:ANALYSIS_USR[t](s.pos,pills)}]
     });
@@ -1235,7 +1235,7 @@ Time: ${new Date().toLocaleString('en-US',{timeZone:'America/New_York'})} ET`;
 
   try{
     const d=await claudeRequest({
-      model:'claude-3-5-haiku-20241022', max_tokens:400,
+      model:'claude-3-haiku-20240307', max_tokens:400,
       system:sysCtx,
       messages:[...apiHistory,{role:'user',content:text}]
     });

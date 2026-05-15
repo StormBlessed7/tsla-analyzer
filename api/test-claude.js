@@ -15,7 +15,7 @@ module.exports = async function handler(req, res) {
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-3-5-haiku-20241022',
+        model: 'claude-3-haiku-20240307',
         max_tokens: 20,
         messages: [{ role: 'user', content: 'Reply with the word OK only.' }]
       })
@@ -23,7 +23,7 @@ module.exports = async function handler(req, res) {
 
     const data = await response.json();
     if (response.ok) {
-      return res.status(200).json({ ok: true, model: 'claude-3-5-haiku-20241022', reply: data.content?.[0]?.text });
+      return res.status(200).json({ ok: true, model: 'claude-3-haiku-20240307', reply: data.content?.[0]?.text });
     } else {
       return res.status(200).json({ ok: false, status: response.status, anthropic_error: data });
     }
