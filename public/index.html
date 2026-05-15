@@ -305,6 +305,41 @@ body { font-family:'SF Mono','Fira Code','Consolas',monospace; background:var(--
   .claude-tab-btn { writing-mode:horizontal-tb; top:auto; bottom:20px; right:20px; border-radius:20px; padding:8px 16px; transform:none; }
   .claude-tab-btn.shifted { right:20px; bottom:calc(62vh + 12px); }
 }
+
+/* ─── PRICE FLASH ANIMATION ──────────────────────────────────── */
+@keyframes flashGreen { 0%{background:rgba(34,197,94,.35)} 100%{background:transparent} }
+@keyframes flashRed   { 0%{background:rgba(239,68,68,.35)}  100%{background:transparent} }
+.price-flash-up   { animation:flashGreen 500ms ease-out forwards; border-radius:4px; }
+.price-flash-down { animation:flashRed   500ms ease-out forwards; border-radius:4px; }
+
+/* ─── MORNING BRIEF ───────────────────────────────────────────── */
+.morning-brief { padding:12px 18px; background:rgba(245,158,11,.08); border-bottom:2px solid rgba(245,158,11,.35); }
+.morning-brief-hdr { display:flex;align-items:center;justify-content:space-between;margin-bottom:6px; }
+.morning-brief-lbl { font-size:10px;font-weight:700;letter-spacing:2px;color:var(--amber);text-transform:uppercase; }
+.morning-brief-ts  { font-size:9px;color:var(--text3); }
+.morning-brief-body { font-size:12px;color:var(--text2);line-height:1.75;font-family:-apple-system,sans-serif; }
+
+/* ─── SKELETON LOADING ───────────────────────────────────────── */
+@keyframes skel-wave { 0%,100%{opacity:.25} 50%{opacity:.65} }
+.skel-chart-wrap { width:100%;height:100%;display:flex;align-items:flex-end;gap:3px;padding:20px 12px 0; }
+.skel-bar { flex:1;background:rgba(255,255,255,.06);border-radius:2px 2px 0 0;animation:skel-wave 1.5s ease-in-out infinite; }
+.skel-news { padding:9px 0;border-bottom:0.5px solid var(--border); }
+.skel-line { height:10px;background:rgba(255,255,255,.07);border-radius:3px;margin-bottom:5px;animation:skel-wave 1.5s ease-in-out infinite; }
+.skel-line.wide   { width:88%; }
+.skel-line.medium { width:60%; }
+.skel-line.narrow { width:38%;animation-delay:.25s; }
+
+/* ─── ANALYSIS PROGRESS ──────────────────────────────────────── */
+.aprogress { height:2px;background:var(--bg3);border-radius:2px;overflow:hidden;margin:8px 0; }
+.aprogress-bar { height:100%;width:35%;background:var(--blue);border-radius:2px;animation:aprog 1.6s ease-in-out infinite; }
+@keyframes aprog { 0%{transform:translateX(-200%);width:35%} 50%{width:55%} 100%{transform:translateX(400%);width:35%} }
+
+/* ─── CACHED BANNER ──────────────────────────────────────────── */
+.cached-banner { display:flex;align-items:center;gap:8px;margin-bottom:10px;padding:6px 10px;background:rgba(255,255,255,.025);border:0.5px solid var(--border);border-radius:var(--radius); }
+.cached-lbl { flex-shrink:0;background:rgba(245,158,11,.15);color:var(--amber);border:0.5px solid rgba(245,158,11,.4);border-radius:10px;padding:1px 8px;font-size:9px;font-weight:700;letter-spacing:1px; }
+.cached-ts  { font-size:10px;color:var(--text3);flex:1; }
+.clear-cache-btn { font-family:inherit;font-size:9px;background:none;border:0.5px solid var(--border2);color:var(--text3);padding:2px 9px;border-radius:var(--radius);cursor:pointer;transition:all .15s; }
+.clear-cache-btn:hover { color:var(--red);border-color:rgba(239,68,68,.5); }
 </style>
 </head>
 <body>
@@ -318,6 +353,13 @@ body { font-family:'SF Mono','Fira Code','Consolas',monospace; background:var(--
 
   <!-- ═══════════════════ TSLA TAB ═══════════════════ -->
   <div class="ticker-tab active" id="tab-TSLA">
+    <div class="morning-brief" id="morning-brief-TSLA" style="display:none">
+      <div class="morning-brief-hdr">
+        <span class="morning-brief-lbl">Morning Brief</span>
+        <span class="morning-brief-ts" id="brief-ts-TSLA"></span>
+      </div>
+      <div class="morning-brief-body" id="brief-text-TSLA"></div>
+    </div>
     <div class="header">
       <div class="header-left">
         <div class="ticker-badge">
@@ -401,6 +443,11 @@ body { font-family:'SF Mono','Fira Code','Consolas',monospace; background:var(--
       <button class="analyze-btn" id="analyze-btn-TSLA" onclick="runAnalysis('TSLA')">⚡ RUN FULL AI ANALYSIS</button>
       <div style="text-align:center;margin-top:6px"><button onclick="testConnection('TSLA')" style="font-family:inherit;font-size:10px;background:none;border:0.5px solid var(--border2);color:var(--text3);padding:3px 12px;border-radius:var(--radius);cursor:pointer">🔌 Test Claude Connection</button></div>
 
+      <div class="cached-banner" id="cached-banner-TSLA" style="display:none">
+        <span class="cached-ts" id="cached-ts-TSLA"></span>
+        <span class="cached-lbl">CACHED</span>
+        <button class="clear-cache-btn" onclick="clearAnalysisCache('TSLA')">Clear Cache</button>
+      </div>
       <div class="analysis-cards" id="analysis-cards-TSLA"></div>
 
       <div class="rr-section" id="rr-TSLA" style="display:none">
@@ -421,6 +468,13 @@ body { font-family:'SF Mono','Fira Code','Consolas',monospace; background:var(--
 
   <!-- ═══════════════════ SPY TAB ═══════════════════ -->
   <div class="ticker-tab" id="tab-SPY">
+    <div class="morning-brief" id="morning-brief-SPY" style="display:none">
+      <div class="morning-brief-hdr">
+        <span class="morning-brief-lbl">Morning Brief</span>
+        <span class="morning-brief-ts" id="brief-ts-SPY"></span>
+      </div>
+      <div class="morning-brief-body" id="brief-text-SPY"></div>
+    </div>
     <div class="header">
       <div class="header-left">
         <div class="ticker-badge">
@@ -503,6 +557,11 @@ body { font-family:'SF Mono','Fira Code','Consolas',monospace; background:var(--
       <button class="analyze-btn" id="analyze-btn-SPY" onclick="runAnalysis('SPY')">⚡ RUN FULL AI ANALYSIS</button>
       <div style="text-align:center;margin-top:6px"><button onclick="testConnection('SPY')" style="font-family:inherit;font-size:10px;background:none;border:0.5px solid var(--border2);color:var(--text3);padding:3px 12px;border-radius:var(--radius);cursor:pointer">🔌 Test Claude Connection</button></div>
 
+      <div class="cached-banner" id="cached-banner-SPY" style="display:none">
+        <span class="cached-ts" id="cached-ts-SPY"></span>
+        <span class="cached-lbl">CACHED</span>
+        <button class="clear-cache-btn" onclick="clearAnalysisCache('SPY')">Clear Cache</button>
+      </div>
       <div class="analysis-cards" id="analysis-cards-SPY"></div>
 
       <div class="rr-section" id="rr-SPY" style="display:none">
@@ -578,6 +637,7 @@ const state = {
 let activeTicker = 'TSLA';
 let finnhubToken = null, finnhubWS = null;
 const prevClose = { TSLA:null, SPY:null };
+const lastPrice  = { TSLA:null, SPY:null };
 
 function el(id, t){ return document.getElementById(`${id}-${t}`); }
 
@@ -612,6 +672,98 @@ function calcHV(ohlc){
   const mean=returns.reduce((a,b)=>a+b,0)/returns.length;
   const variance=returns.reduce((a,b)=>a+(b-mean)**2,0)/(returns.length-1);
   return Math.sqrt(variance*252)*100;
+}
+
+// Full EMA series — returns array same length as closes, null for leading values
+function calcEMAFull(closes, period){
+  if(closes.length<period) return closes.map(()=>null);
+  const k=2/(period+1);
+  let ema=closes.slice(0,period).reduce((a,b)=>a+b,0)/period;
+  const out=new Array(period-1).fill(null); out.push(ema);
+  for(let i=period;i<closes.length;i++){ ema=closes[i]*k+ema*(1-k); out.push(ema); }
+  return out;
+}
+
+// MACD 12/26/9 — returns {macd, signal, hist}
+function calcMACDFull(closes){
+  if(closes.length<26) return{macd:0,signal:0,hist:0};
+  const e12=calcEMAFull(closes,12), e26=calcEMAFull(closes,26);
+  const macdLine=[];
+  for(let i=25;i<closes.length;i++){
+    if(e12[i]!=null&&e26[i]!=null) macdLine.push(e12[i]-e26[i]);
+  }
+  if(!macdLine.length) return{macd:0,signal:0,hist:0};
+  const sig=calcEMA(macdLine,Math.min(9,macdLine.length));
+  const m=macdLine[macdLine.length-1];
+  return{macd:m,signal:sig,hist:m-sig};
+}
+
+// Bollinger Bands 20-period, 2σ
+function calcBollingerBands(closes,period=20){
+  if(closes.length<period) return{upper:0,middle:0,lower:0};
+  const slice=closes.slice(-period);
+  const sma=slice.reduce((a,b)=>a+b,0)/period;
+  const sd=Math.sqrt(slice.reduce((a,b)=>a+(b-sma)**2,0)/period);
+  return{upper:sma+2*sd, middle:sma, lower:sma-2*sd};
+}
+
+// Recalculate and render all indicator pills from current ohlcData
+function updateIndicatorPills(t){
+  const s=state[t];
+  const ohlc=s.ohlcData;
+  if(!ohlc||ohlc.length<2) return;
+  const closes=ohlc.map(c=>c.close);
+  const last=closes[closes.length-1];
+  const dec=t==='SPY'?1:0;
+
+  const rsi=Math.round(calcRSI(closes,14));
+  const rsiCls=rsi>60?'bull':rsi<40?'bear':'';
+  const rsiTag=rsi>70?'OB':rsi<30?'OS':'';
+
+  const{macd,signal,hist}=calcMACDFull(closes);
+  const macdBull=hist>0;
+
+  const vwap=calcVWAP(ohlc);
+  s.vwap=vwap;
+  const aboveVwap=last>vwap;
+
+  const ema9 =calcEMA(closes,Math.min(9, closes.length));
+  const ema21=calcEMA(closes,Math.min(21,closes.length));
+  const emaBull=ema9>ema21;
+
+  const bb=calcBollingerBands(closes,20);
+  const bbPos=last>bb.upper?'Upper':last<bb.lower?'Lower':'Mid';
+  const bbCls=bbPos==='Upper'?'bull':bbPos==='Lower'?'bear':'';
+
+  const pillsEl=document.getElementById(`pills-${t}`);
+  if(!pillsEl) return;
+  pillsEl.innerHTML=
+    `<span class="pill ${rsiCls}">RSI: ${rsi}${rsiTag?' '+rsiTag:''}</span>`+
+    `<span class="pill ${macdBull?'bull':'bear'}">MACD: ${macdBull?'▲':'▼'} ${hist>=0?'+':''}${hist.toFixed(2)}</span>`+
+    `<span class="pill ${aboveVwap?'bull':'bear'}">VWAP: ${aboveVwap?'▲':'▼'} $${vwap.toFixed(dec)}</span>`+
+    `<span class="pill ${emaBull?'bull':'bear'}">9/21 EMA: ${emaBull?'Bull':'Bear'}</span>`+
+    `<span class="pill ${bbCls}">BB: ${bbPos} Band</span>`;
+
+  // Keep VWAP line on chart in sync
+  if(s.candleSeries&&s.vwapLine){
+    try{s.candleSeries.removePriceLine(s.vwapLine);}catch(_){}
+    s.vwapLine=s.candleSeries.createPriceLine({price:vwap,color:'#f59e0b',lineWidth:1,lineStyle:LightweightCharts.LineStyle.Dashed,axisLabelVisible:true,title:'VWAP'});
+  }
+}
+
+// Skeleton helpers
+function skeletonChart(){
+  return `<div class="skel-chart-wrap">${Array.from({length:34},(_,i)=>{
+    const h=18+Math.abs(Math.sin(i*0.42+0.3))*68;
+    return `<div class="skel-bar" style="height:${h.toFixed(0)}%;animation-delay:${(i*0.035).toFixed(2)}s"></div>`;
+  }).join('')}</div>`;
+}
+function skeletonNews(){
+  return Array.from({length:4},(_,i)=>`<div class="skel-news">
+    <div class="skel-line wide"   style="animation-delay:${(i*.1).toFixed(2)}s"></div>
+    <div class="skel-line medium" style="animation-delay:${(i*.1+.12).toFixed(2)}s"></div>
+    <div class="skel-line narrow" style="animation-delay:${(i*.1+.25).toFixed(2)}s"></div>
+  </div>`).join('');
 }
 
 // ── TABS ──────────────────────────────────────────────────────
@@ -715,12 +867,15 @@ async function renderChart(t, tf){
 
   // Tear down old chart
   if(s.chart){ s.chart.remove(); s.chart=null; s.candleSeries=null; s.srLines=[]; s.vwapLine=null; }
-  wrap.innerHTML='';
+
+  // Show skeleton while fetching candles
+  wrap.innerHTML=skeletonChart();
 
   // Real Finnhub candle data with fallback to generated
   let ohlc=await fetchCandles(t,tf);
   const isRealData=!!(ohlc&&ohlc.length>=5);
   if(!isRealData) ohlc=generateOHLC(t,tf);
+  wrap.innerHTML='';
 
   // Badge
   const panelLbl=wrap.closest('.chart-panel')?.querySelector('.panel-label');
@@ -754,17 +909,7 @@ async function renderChart(t, tf){
   el('m-iv',t).textContent=hv?hv.toFixed(1)+'% HV':'–';
   el('m-iv',t).className='metric-value';
 
-  const closes=ohlc.map(c=>c.close);
-  const rsiVal=Math.round(calcRSI(closes,14));
-  const macd=calcMACD(closes);
-  const ema50=calcEMA(closes,Math.min(50,closes.length));
-
-  el('pills',t).innerHTML=`
-    <span class="pill ${rsiVal>60?'bull':rsiVal<40?'bear':''}">RSI: ${rsiVal}</span>
-    <span class="pill ${macd>0?'bull':'bear'}">MACD: ${macd>0?'Bullish X':'Bearish X'}</span>
-    <span class="pill ${last>s.vwap?'bull':'bear'}">VWAP: ${last>s.vwap?'Above':'Below'}</span>
-    <span class="pill">50 EMA: $${ema50.toFixed(t==='SPY'?1:0)}</span>
-    <span class="pill ${rsiVal>55?'bull':'bear'}">BB: ${rsiVal>55?'Upper band':'Mid band'}</span>`;
+  updateIndicatorPills(t);
 
   // Volume bars
   const vb=el('volBars',t); vb.innerHTML='';
@@ -1000,9 +1145,22 @@ function updateLiveMetrics(t, price, change, changePct){
   const isUp=change>=0;
   const pe=el('m-price',t), ce=el('m-change',t);
   if(!pe||!ce) return;
+
+  // Price flash animation — detect tick direction before updating
+  let flashDir=null;
+  if(lastPrice[t]!==null && price!==lastPrice[t]) flashDir=price>lastPrice[t]?'up':'down';
+  lastPrice[t]=price;
+
   pe.textContent='$'+price.toFixed(2); pe.className='metric-value '+(isUp?'up':'down');
   ce.textContent=(isUp?'+':'')+change.toFixed(2)+' ('+(isUp?'+':'')+changePct.toFixed(2)+'%)';
   ce.className='metric-value '+(isUp?'up':'down');
+
+  if(flashDir){
+    pe.classList.remove('price-flash-up','price-flash-down');
+    void pe.offsetWidth; // reflow to restart animation
+    pe.classList.add('price-flash-'+flashDir);
+    setTimeout(()=>pe.classList.remove('price-flash-up','price-flash-down'),550);
+  }
 }
 
 async function fetchQuote(t){
@@ -1032,6 +1190,12 @@ function connectFinnhub(){
       const pc=prevClose[sym]; if(pc==null) return;
       const ch=tr.p-pc, pct=(ch/pc)*100;
       updateLiveMetrics(sym,tr.p,ch,pct);
+      // Update last candle close with live price and recalculate indicators
+      const ohlc=state[sym].ohlcData;
+      if(ohlc&&ohlc.length>0){
+        ohlc[ohlc.length-1].close=tr.p;
+        updateIndicatorPills(sym);
+      }
     });
   });
   finnhubWS.addEventListener('close',()=>{
@@ -1366,11 +1530,18 @@ async function runAnalysis(t){
   const btn=el('analyze-btn',t);
   btn.disabled=true; btn.textContent=`Analyzing ${t}…`;
 
+  // Hide cached banner while running
+  const banner=document.getElementById(`cached-banner-${t}`);
+  if(banner) banner.style.display='none';
+
   const cards=document.getElementById(`analysis-cards-${t}`);
   cards.classList.add('visible');
-  cards.innerHTML='<div class="acard raw">Claude is analyzing chart data and market conditions…</div>';
+  cards.innerHTML='<div class="acard raw">Claude is analyzing chart data and market conditions…<div class="aprogress"><div class="aprogress-bar"></div></div></div>';
   el('bull-bear',t).classList.remove('visible');
   document.getElementById(`rr-${t}`).style.display='none';
+
+  // Show skeleton news while analysis runs
+  el('news-feed',t).innerHTML=skeletonNews();
 
   const pills=el('pills',t).innerText;
 
@@ -1383,6 +1554,10 @@ async function runAnalysis(t){
     const text=d.content.map(i=>i.text||'').filter(Boolean).join('\n');
 
     renderAnalysisCards(t,text);
+
+    // Save to localStorage and show cached banner
+    saveCachedAnalysis(t,text);
+    showCachedBanner(t,new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:true}),new Date().toDateString());
 
     // Parse and render Setup Score
     const scoreM=text.match(/SETUP_SCORE:\s*(\d+)/i);
@@ -1670,6 +1845,24 @@ async function pmRefreshQuotes(){
         updateChatContextChip(t);
       }
     } catch(_){}
+    // Refresh candle data and recalculate all technical indicators
+    try{
+      const fresh=await fetchCandles(t,state[t].tf);
+      if(fresh&&fresh.length>=5){
+        state[t].ohlcData=fresh;
+        updateIndicatorPills(t);
+        // Update candlestick series with fresh data
+        if(state[t].candleSeries){
+          const interval=state[t].tf==='1D'?300:state[t].tf==='5D'?1800:86400;
+          const nowTs=Math.floor(Date.now()/1000);
+          const candleData=fresh.map((bar,i)=>({
+            time:bar.time||(nowTs-(fresh.length-1-i)*interval),
+            open:bar.open,high:bar.high,low:bar.low,close:bar.close,
+          }));
+          try{state[t].candleSeries.setData(candleData);}catch(_){}
+        }
+      }
+    } catch(_){}
   }));
 }
 
@@ -1759,6 +1952,137 @@ async function testConnection(t){
   }
 }
 
+// ── MORNING BRIEF ─────────────────────────────────────────────
+const MORNING_BRIEF_SYS=`You are a pre-market trading analyst. Generate a short morning brief for TSLA and SPY to help a day trader get ready for open. Write in plain simple English — no jargon, no bullet points. Each brief is exactly 3-4 sentences covering: pre-market price action, key news catalyst, key level to watch, and overall market sentiment heading into open. Sound like you are texting a friend who trades.
+
+Format EXACTLY (no extra text before or after):
+TSLA_BRIEF: [3-4 sentences]
+SPY_BRIEF: [3-4 sentences]`;
+
+function displayMorningBrief(data){
+  const label=`Generated ${data.ts}`;
+  ['TSLA','SPY'].forEach(t=>{
+    const box=document.getElementById(`morning-brief-${t}`);
+    const textEl=document.getElementById(`brief-text-${t}`);
+    const tsEl=document.getElementById(`brief-ts-${t}`);
+    if(!box||!textEl) return;
+    const txt=t==='TSLA'?data.tsla:data.spy;
+    if(!txt) return;
+    textEl.textContent=txt;
+    if(tsEl) tsEl.textContent=label;
+    box.style.display='block';
+  });
+}
+
+async function fetchMorningBrief(){
+  try{
+    const etStr=new Date().toLocaleString('en-US',{timeZone:'America/New_York',hour:'2-digit',minute:'2-digit',hour12:false});
+    const d=await claudeRequest({
+      model:'claude-opus-4-7',max_tokens:600,
+      system:MORNING_BRIEF_SYS,
+      messages:[{role:'user',content:`Generate today's morning brief for TSLA and SPY. Date: ${new Date().toDateString()}, Time: ${etStr} ET. Use web search to find current pre-market price action, key news catalysts, and key levels to watch.`}],
+      tools:[{type:'web_search_20250305',name:'web_search',max_uses:3}]
+    });
+    const text=d.content.filter(b=>b.type==='text').map(b=>b.text||'').join('\n');
+    const tslaM=text.match(/TSLA_BRIEF:\s*([\s\S]*?)(?=SPY_BRIEF:|$)/i);
+    const spyM =text.match(/SPY_BRIEF:\s*([\s\S]*?)$/i);
+    const ts=new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:true});
+    const briefData={
+      date:new Date().toDateString(),
+      tsla:tslaM?tslaM[1].trim():text,
+      spy:spyM?spyM[1].trim():'',
+      ts
+    };
+    localStorage.setItem('morningBrief',JSON.stringify(briefData));
+    displayMorningBrief(briefData);
+  } catch(e){ console.warn('[MorningBrief] Failed:',e.message); }
+}
+
+function loadMorningBrief(){
+  try{
+    const raw=localStorage.getItem('morningBrief');
+    if(raw){
+      const data=JSON.parse(raw);
+      if(data.date===new Date().toDateString()&&(data.tsla||data.spy)){
+        displayMorningBrief(data); return;
+      }
+    }
+  } catch(_){}
+  // Fetch if 9am ET or later
+  const etStr=new Date().toLocaleString('en-US',{timeZone:'America/New_York',hour:'2-digit',minute:'2-digit',hour12:false});
+  const[h,m]=etStr.split(':').map(Number);
+  if(h*60+m>=9*60) fetchMorningBrief();
+}
+
+// ── CACHED ANALYSIS ────────────────────────────────────────────
+function saveCachedAnalysis(t,text){
+  const now=new Date();
+  const ts=now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:true});
+  localStorage.setItem(`lastAnalysis_${t}`,JSON.stringify({text,ts,date:now.toDateString()}));
+}
+
+function showCachedBanner(t,ts,date){
+  const banner=document.getElementById(`cached-banner-${t}`);
+  const tsEl  =document.getElementById(`cached-ts-${t}`);
+  if(!banner||!tsEl) return;
+  const dayLabel=date===new Date().toDateString()?'Today':date;
+  tsEl.textContent=`Last analysis: ${dayLabel} ${ts}`;
+  banner.style.display='flex';
+}
+
+function loadCachedAnalysis(t){
+  try{
+    const raw=localStorage.getItem(`lastAnalysis_${t}`);
+    if(!raw) return;
+    const{text,ts,date}=JSON.parse(raw);
+    if(!text) return;
+    showCachedBanner(t,ts,date);
+    renderAnalysisCards(t,text);
+    const scoreM=text.match(/SETUP_SCORE:\s*(\d+)/i);
+    const scoreReasonM=text.match(/SCORE_REASON:\s*([^\n]+)/i);
+    if(scoreM) renderSetupScore(t,scoreM[1],scoreReasonM?scoreReasonM[1].trim():'');
+    const isCall=/signal:\s*call/i.test(text),isPut=/signal:\s*put/i.test(text);
+    const confM=text.match(/confidence[:\s]+(\d+)/i),conf=confM?parseInt(confM[1]):60;
+    const dir=el('sig-dir',t);
+    if(isCall&&!isPut){dir.className='signal-dir call';dir.textContent='▲ CALL Signal';}
+    else if(isPut){dir.className='signal-dir put';dir.textContent='▼ PUT Signal';}
+    const fill=el('conf-fill',t);
+    fill.className='conf-fill '+(isCall&&!isPut?'call':isPut?'put':'neutral');
+    fill.style.width=conf+'%';
+    const eM=text.match(/entry:\s*\$?([\d.]+)/i),tM=text.match(/target:\s*\$?([\d.]+)/i),sM=text.match(/stop:\s*\$?([\d.]+)/i);
+    if(eM||tM||sM){
+      state[t].tradeLines={entry:eM?parseFloat(eM[1]):null,target:tM?parseFloat(tM[1]):null,stop:sM?parseFloat(sM[1]):null};
+      updateTradeLines(t);
+      document.getElementById(`rr-${t}`).style.display='block';
+      calcRR(t);
+    }
+    const bui=text.indexOf('BULL_CASE:'),bei=text.indexOf('BEAR_CASE:'),si2=text.indexOf('SETUP_SCORE:');
+    const bt=bui>=0?text.slice(bui+10,bei>bui?bei:undefined).trim():'';
+    const br=bei>=0?text.slice(bei+10,si2>bei?si2:undefined).trim():'';
+    if(bt||br){el('bull-text',t).textContent=bt;el('bear-text',t).textContent=br;el('bull-bear',t).classList.add('visible');}
+    const catM=text.match(/📰[^\n]*\n([\s\S]*?)(?=⚠️|🕐|BULL_CASE|$)/);
+    if(catM){
+      const lines=catM[1].trim().split('\n').filter(l=>l.startsWith('•')).map(l=>l.replace(/^•\s*/,''));
+      if(lines.length) el('news-feed',t).innerHTML=lines.map(l=>`<div class="news-item"><div class="news-headline">${l}</div><div class="news-meta"><span style="font-size:10px;color:var(--text3)">Cached · ${ts}</span></div></div>`).join('');
+    }
+  } catch(_){}
+}
+
+function clearAnalysisCache(t){
+  localStorage.removeItem(`lastAnalysis_${t}`);
+  const banner=document.getElementById(`cached-banner-${t}`);
+  if(banner) banner.style.display='none';
+  const cards=document.getElementById(`analysis-cards-${t}`);
+  if(cards){cards.innerHTML='';cards.classList.remove('visible');}
+  const dir=el('sig-dir',t); dir.className='signal-dir neutral'; dir.textContent='↔ Awaiting Analysis';
+  el('sig-detail',t).textContent='Hit Run Full Analysis to get your CALL / PUT recommendation.';
+  el('conf-fill',t).style.width='0%';
+  el('bull-bear',t).classList.remove('visible');
+  document.getElementById(`rr-${t}`).style.display='none';
+  state[t].tradeLines=null; updateTradeLines(t);
+  el('news-feed',t).innerHTML='<div style="font-size:11px;color:var(--text3)">Run Full Analysis to load news.</div>';
+}
+
 // ── INIT ──────────────────────────────────────────────────────
 async function init(){
   updateSessionBadges();
@@ -1768,6 +2092,11 @@ async function init(){
   // Load Finnhub token + real quotes first, then render chart with real candle data
   await initFinnhub();
   await renderChart('TSLA','1D');
+  // Restore cached analyses (must be after renderChart so trade lines can draw)
+  loadCachedAnalysis('TSLA');
+  loadCachedAnalysis('SPY');
+  // Load morning brief (from cache or fetch if 9am+ ET)
+  loadMorningBrief();
   // Initial PM panel render (quotes already loaded by initFinnhub)
   ['TSLA','SPY'].forEach(t=>updatePMPanel(t,null));
   // Start adaptive Finnhub refresh + power-hour auto-analysis
