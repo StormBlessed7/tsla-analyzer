@@ -175,31 +175,51 @@ body { font-family:'SF Mono','Fira Code','Consolas',monospace; background:var(--
 .scan-btn:hover { opacity:.85; }
 .scan-btn:disabled { opacity:.35; cursor:not-allowed; }
 .scan-ts { font-size:10px; color:var(--text3); }
-.scan-results { padding:16px 20px; }
-.scan-card { border:0.5px solid var(--border2); border-radius:var(--radius-lg); padding:14px 16px; margin-bottom:12px; cursor:pointer; background:var(--bg2); transition:border-color .15s; }
-.scan-card:hover { border-color:rgba(255,255,255,0.22); }
-.scan-card.strong { border-color:rgba(34,197,94,.45); background:rgba(34,197,94,.03); }
-.scan-card.watchlist { border-color:rgba(245,158,11,.4); background:rgba(245,158,11,.025); }
-.scan-top { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:8px; gap:8px; }
-.scan-ticker-name { font-size:20px; font-weight:700; letter-spacing:1px; }
-.scan-company { font-size:10px; color:var(--text3); margin-top:2px; }
-.scan-badges { display:flex; flex-direction:column; align-items:flex-end; gap:5px; }
-.scan-sig { font-size:11px; font-weight:700; padding:4px 12px; border-radius:20px; }
-.scan-sig.call { background:rgba(34,197,94,.15); color:var(--green); }
-.scan-sig.put  { background:rgba(239,68,68,.15); color:var(--red); }
-.scan-sig.wait { background:rgba(245,158,11,.15); color:var(--amber); }
-.scan-lbl { font-size:9px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; }
-.scan-lbl.strong { color:var(--green); }
-.scan-lbl.watchlist { color:var(--amber); }
-.scan-score-row { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
-.scan-score-num { font-size:26px; font-weight:700; line-height:1; }
-.scan-score-track { flex:1; height:4px; background:var(--bg3); border-radius:2px; overflow:hidden; }
-.scan-score-fill { height:100%; border-radius:2px; }
-.scan-summary { font-size:12px; color:var(--text); line-height:1.65; font-family:-apple-system,sans-serif; margin-bottom:6px; }
-.scan-why { font-size:11px; color:var(--text3); font-style:italic; font-family:-apple-system,sans-serif; margin-bottom:10px; }
-.scan-levels { display:flex; gap:16px; font-size:11px; flex-wrap:wrap; }
-.scan-lv { color:var(--text3); }
-.scan-lv b { color:var(--text); font-weight:600; margin-left:3px; }
+.scan-results { padding:16px 20px; display:grid; grid-template-columns:1fr; gap:16px; }
+@media(min-width:860px){ .scan-results { grid-template-columns:repeat(3,1fr); } }
+
+/* Card shell */
+.scan-card { border:0.5px solid var(--border2); border-radius:var(--radius-lg); overflow:hidden; background:var(--bg2); }
+.scan-card.strong  { border-color:rgba(34,197,94,.5); }
+.scan-card.watchlist { border-color:rgba(245,158,11,.45); }
+.scan-card.weak    { border-color:rgba(239,68,68,.35); }
+
+/* Card top row: rank + ticker + signal */
+.sc-head { padding:14px 16px 12px; display:flex; align-items:flex-start; justify-content:space-between; border-bottom:0.5px solid var(--border); }
+.sc-rank { font-size:10px; font-weight:700; letter-spacing:1.5px; color:var(--text3); text-transform:uppercase; margin-bottom:4px; }
+.sc-ticker { font-size:28px; font-weight:700; letter-spacing:1px; line-height:1; }
+.sc-company { font-size:12px; color:var(--text3); margin-top:4px; }
+.sc-right { display:flex; flex-direction:column; align-items:flex-end; gap:6px; }
+.sc-sig { font-size:14px; font-weight:700; padding:7px 18px; border-radius:20px; letter-spacing:.5px; }
+.sc-sig.call { background:rgba(34,197,94,.15); color:var(--green); border:0.5px solid rgba(34,197,94,.3); }
+.sc-sig.put  { background:rgba(239,68,68,.15);  color:var(--red);   border:0.5px solid rgba(239,68,68,.3); }
+.sc-sig.wait { background:rgba(245,158,11,.15); color:var(--amber); border:0.5px solid rgba(245,158,11,.3); }
+.sc-setup-lbl { font-size:9px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; }
+.sc-setup-lbl.strong   { color:var(--green); }
+.sc-setup-lbl.watchlist{ color:var(--amber); }
+.sc-setup-lbl.weak     { color:var(--red); }
+
+/* Score row */
+.sc-score-wrap { padding:12px 16px; border-bottom:0.5px solid var(--border); display:flex; align-items:flex-start; gap:14px; }
+.sc-score-num { font-size:44px; font-weight:700; line-height:1; flex-shrink:0; min-width:64px; }
+.sc-score-right { flex:1; padding-top:2px; }
+.sc-score-verdict { font-size:10px; font-weight:700; letter-spacing:1px; text-transform:uppercase; margin-bottom:5px; }
+.sc-score-bar-wrap { height:5px; background:var(--bg3); border-radius:3px; overflow:hidden; margin-bottom:6px; }
+.sc-score-bar { height:100%; border-radius:3px; transition:width 1.2s ease; }
+.sc-score-why { font-size:11px; color:var(--text2); line-height:1.55; font-family:-apple-system,sans-serif; }
+
+/* What's happening */
+.sc-body { padding:14px 16px; border-bottom:0.5px solid var(--border); }
+.sc-section-lbl { font-size:9px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--text3); margin-bottom:8px; }
+.sc-summary { font-size:13px; color:var(--text); line-height:1.8; font-family:-apple-system,sans-serif; }
+
+/* Trade levels 3-col grid */
+.sc-levels { display:grid; grid-template-columns:1fr 1fr 1fr; }
+.sc-lv { padding:11px 16px; border-right:0.5px solid var(--border); }
+.sc-lv:last-child { border-right:none; }
+.sc-lv-label { font-size:10px; text-transform:uppercase; letter-spacing:1px; color:var(--text3); margin-bottom:5px; }
+.sc-lv-price { font-size:18px; font-weight:700; }
+.sc-lv-pct   { font-size:11px; margin-top:3px; font-family:-apple-system,sans-serif; font-weight:600; }
 
 /* ─── ASK CLAUDE SLIDING PANEL ──────────────────────────────── */
 .claude-panel {
@@ -646,9 +666,10 @@ async function fetchCandles(t, tf){
 }
 
 function generateOHLC(t, tf){
-  const pts=tf==='1D'?60:tf==='5D'?20:90;
-  const {base,range,vol}=CHART_CFG[t];
-  // Anchor to the last known real price; fall back to current base
+  const pts=tf==='1D'?78:tf==='5D'?65:21;  // 1D=5min bars, 5D=30min bars, 1M=daily bars
+  const {base,range,vol:dailyVol}=CHART_CFG[t];
+  // Scale move-per-bar to the timeframe (5-min bars are much smaller than daily)
+  const vol=tf==='1D'?dailyVol*0.07:tf==='5D'?dailyVol*0.3:dailyVol;
   const anchor=prevClose[t]||base+(Math.random()-.5)*range;
   let p=anchor;
   const ohlc=[];
@@ -704,9 +725,10 @@ async function renderChart(t, tf){
   // Badge
   const panelLbl=wrap.closest('.chart-panel')?.querySelector('.panel-label');
   if(panelLbl){
+    const tfLabel=tf==='1D'?'5-min':tf==='5D'?'30-min':'Daily';
     panelLbl.innerHTML=isRealData
-      ?'Candlestick + VWAP &nbsp;<span style="color:var(--green);font-size:9px">● LIVE DATA</span>'
-      :'Candlestick + VWAP &nbsp;<span style="color:var(--amber);font-size:9px">⚠ SIMULATED — no Finnhub data returned</span>';
+      ?`Candlestick + VWAP &nbsp;<span style="color:var(--green);font-size:9px">● LIVE ${tfLabel} DATA</span>`
+      :'Candlestick + VWAP &nbsp;<span style="color:var(--amber);font-size:9px">⚠ SIMULATED DATA</span>';
   }
 
   s.ohlcData=ohlc;
@@ -760,7 +782,7 @@ async function renderChart(t, tf){
   });
 
   // Build timestamps (lightweight-charts needs Unix seconds, ascending order)
-  const interval=86400; // daily candles for all timeframes (free Finnhub tier)
+  const interval=tf==='1D'?300:tf==='5D'?1800:86400;
   const nowTs=Math.floor(Date.now()/1000);
   const candleData=ohlc.map((bar,i)=>({
     time: bar.time || (nowTs - (ohlc.length-1-i)*interval),
@@ -789,11 +811,12 @@ async function renderChart(t, tf){
     rightPriceScale:{
       borderColor:'rgba(255,255,255,0.08)',
       textColor:'#666',
-      scaleMargins:{top:0.06,bottom:0.06},
+      scaleMargins:{top:0.08,bottom:0.08},
+      autoScale:true,
     },
     timeScale:{
       borderColor:'rgba(255,255,255,0.08)',
-      timeVisible:true,
+      timeVisible:tf!=='1M',
       secondsVisible:false,
       fixLeftEdge:true,
       fixRightEdge:true,
@@ -1142,44 +1165,89 @@ function startScannerCooldown(secs=30){
 
 function renderScannerCards(text){
   const results=document.getElementById('scan-results'); if(!results) return;
+  const rankLabel=['#1 — TOP PICK','#2 — SECOND PICK','#3 — ALSO WATCH'];
   const cards=[];
   for(let i=1;i<=3;i++){
     const m=text.match(new RegExp(`STOCK_${i}\\n([\\s\\S]*?)END_STOCK_${i}`));
     if(!m) continue;
     const block=m[1];
-    const get=key=>{ const r=block.match(new RegExp(`${key}:\\s*([^\\n]+)`,'i')); return r?r[1].trim():''; };
-    const ticker=get('TICKER'), company=get('COMPANY'), signal=get('SIGNAL').toLowerCase();
-    const score=parseInt(get('SCORE'))||0, summary=get('SUMMARY'), whyScore=get('WHY_SCORE');
-    const entry=get('ENTRY'), target=get('TARGET'), stop=get('STOP');
+    // Single-line fields
+    const getL=key=>{ const r=block.match(new RegExp(`(?:^|\\n)${key}:\\s*([^\\n]+)`,'i')); return r?r[1].trim():''; };
+    // Multi-line fields — capture until next KEY: marker or end of block
+    const getM=key=>{ const r=block.match(new RegExp(`(?:^|\\n)${key}:\\s*([\\s\\S]*?)(?=\\n[A-Z_]{3,}:|\\s*$)`,'i')); return r?r[1].trim().replace(/\n/g,' '):''; };
+
+    const ticker=getL('TICKER'), company=getL('COMPANY');
+    const signal=getL('SIGNAL').toLowerCase();
+    const score=parseInt(getL('SCORE'))||0;
+    const summary=getM('SUMMARY')||getL('SUMMARY');
+    const whyScore=getM('WHY_SCORE')||getL('WHY_SCORE');
+    const entry=getL('ENTRY'), target=getL('TARGET'), stop=getL('STOP');
+
     const scoreColor=score>=80?'var(--green)':score>=60?'var(--amber)':'var(--red)';
-    const cardClass=score>=80?'strong':score>=60?'watchlist':'';
-    const labelClass=score>=80?'strong':score>=60?'watchlist':'';
-    const labelText=score>=80?'STRONG SETUP':score>=60?'WATCH LIST':'SETUP';
+    const cardClass=score>=80?'strong':score>=60?'watchlist':'weak';
+    const verdict=score>=80?'STRONG SETUP':score>=60?'GOOD SETUP':'WEAK SETUP';
     const sigClass=signal==='call'?'call':signal==='put'?'put':'wait';
     const sigText=signal==='call'?'▲ CALL':signal==='put'?'▼ PUT':'↔ WAIT';
+
+    // Calculate % move from entry to target/stop
+    const entryN=parseFloat(entry.replace(/[$,]/g,''));
+    const targetN=parseFloat(target.replace(/[$,]/g,''));
+    const stopN=parseFloat(stop.replace(/[$,]/g,''));
+    const targetPct=entryN&&targetN?((targetN-entryN)/entryN*100).toFixed(1):'';
+    const stopPct=entryN&&stopN?((stopN-entryN)/entryN*100).toFixed(1):'';
+
     cards.push(`<div class="scan-card ${cardClass}">
-      <div class="scan-top">
-        <div><div class="scan-ticker-name">${ticker}</div><div class="scan-company">${company}</div></div>
-        <div class="scan-badges"><span class="scan-sig ${sigClass}">${sigText}</span><span class="scan-lbl ${labelClass}">${labelText}</span></div>
-      </div>
-      <div class="scan-score-row">
-        <div class="scan-score-num" style="color:${scoreColor}">${score}</div>
-        <div class="scan-score-track"><div class="scan-score-fill" style="width:${score}%;background:${scoreColor}"></div></div>
-      </div>
-      <div class="scan-summary">${summary}</div>
-      <div class="scan-why">${whyScore}</div>
-      <div class="scan-levels">
-        <span class="scan-lv">Entry:<b>${entry}</b></span>
-        <span class="scan-lv">Target:<b>${target}</b></span>
-        <span class="scan-lv">Stop:<b>${stop}</b></span>
-      </div>
-    </div>`);
+  <div class="sc-head">
+    <div>
+      <div class="sc-rank">${rankLabel[i-1]}</div>
+      <div class="sc-ticker">${ticker}</div>
+      <div class="sc-company">${company}</div>
+    </div>
+    <div class="sc-right">
+      <span class="sc-sig ${sigClass}">${sigText}</span>
+      <span class="sc-setup-lbl ${cardClass}">${verdict}</span>
+    </div>
+  </div>
+  <div class="sc-score-wrap">
+    <div class="sc-score-num" style="color:${scoreColor}">${score}</div>
+    <div class="sc-score-right">
+      <div class="sc-score-verdict" style="color:${scoreColor}">${verdict}</div>
+      <div class="sc-score-bar-wrap"><div class="sc-score-bar" style="width:0%;background:${scoreColor}" data-w="${score}"></div></div>
+      <div class="sc-score-why">${whyScore||'–'}</div>
+    </div>
+  </div>
+  <div class="sc-body">
+    <div class="sc-section-lbl">WHAT'S HAPPENING</div>
+    <div class="sc-summary">${summary||'No summary available.'}</div>
+  </div>
+  <div class="sc-levels">
+    <div class="sc-lv">
+      <div class="sc-lv-label">Entry</div>
+      <div class="sc-lv-price" style="color:var(--blue)">${entry||'–'}</div>
+      <div class="sc-lv-pct" style="color:var(--text3)">Buy here</div>
+    </div>
+    <div class="sc-lv">
+      <div class="sc-lv-label">Target 🎯</div>
+      <div class="sc-lv-price" style="color:var(--green)">${target||'–'}</div>
+      <div class="sc-lv-pct" style="color:var(--green)">${targetPct?'+'+targetPct+'%':''}</div>
+    </div>
+    <div class="sc-lv">
+      <div class="sc-lv-label">Stop Loss ⛔</div>
+      <div class="sc-lv-price" style="color:var(--red)">${stop||'–'}</div>
+      <div class="sc-lv-pct" style="color:var(--red)">${stopPct?stopPct+'%':''}</div>
+    </div>
+  </div>
+</div>`);
   }
   if(!cards.length){
-    results.innerHTML=`<div style="text-align:center;padding:30px 20px;font-size:12px;color:var(--text3)">Could not parse results. Raw output:<br><pre style="text-align:left;font-size:10px;overflow:auto;max-height:300px;margin-top:10px">${text.slice(0,2000)}</pre></div>`;
+    results.innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:30px 20px;font-size:12px;color:var(--text3)">Could not parse results.<br><pre style="text-align:left;font-size:10px;overflow:auto;max-height:300px;margin-top:10px">${text.slice(0,2000)}</pre></div>`;
     return;
   }
   results.innerHTML=cards.join('');
+  // Animate score bars after paint
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    results.querySelectorAll('.sc-score-bar[data-w]').forEach(el=>{ el.style.width=el.dataset.w+'%'; });
+  }));
 }
 
 async function runScanner(){
