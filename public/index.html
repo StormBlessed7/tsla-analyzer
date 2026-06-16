@@ -1711,6 +1711,7 @@ function toggleClaudePanel(){
   const nowOpen=!panel.classList.contains('open');
   panel.classList.toggle('open',nowOpen);
   tabBtn.classList.toggle('shifted',nowOpen);
+  if(!chatState[activeTicker]) chatState[activeTicker]={ history:[], open:false };
   chatState[activeTicker].open=nowOpen;
   if(nowOpen){
     renderChatHistory(activeTicker);
@@ -1745,7 +1746,7 @@ async function sendChatMessage(){
   const sendBtn=document.getElementById('chat-send-btn');
   const text=input.value.trim(); if(!text) return;
   const t=activeTicker;
-  const s=state[t];
+  const s=state[t]||{ newsData:[], tradeLines:null };
   input.value=''; sendBtn.disabled=true;
 
   chatState[t].history.push({role:'user',content:text});
@@ -1788,7 +1789,7 @@ Time: ${new Date().toLocaleString('en-US',{timeZone:'America/New_York'})} ET`;
     const reply=d.content.map(i=>i.text||'').filter(Boolean).join('\n').trim();
     chatState[t].history.push({role:'assistant',content:reply||'(No response)'});
   } catch(e){
-    const err=e.message==='RATE_LIMITED'?'⏳ Rate limited. Try again in a moment.':'⚠️ Error — check API key.';
+    const err=e.message==='RATE_LIMITED'?'⏳ Rate limited. Try again in a moment.':`⚠️ Error: ${e.message}`;
     chatState[t].history.push({role:'assistant',content:err});
   }
   if(chatState[t].history.length>10) chatState[t].history=chatState[t].history.slice(-10);
