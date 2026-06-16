@@ -124,6 +124,9 @@ body { font-family:'SF Mono','Fira Code','Consolas',monospace; background:var(--
 .acard.risks { border-color:rgba(239,68,68,.25); background:rgba(239,68,68,.04); }
 .acard.trade { border-color:rgba(34,197,94,.3); background:rgba(34,197,94,.04); }
 .acard.raw { color:var(--text); white-space:pre-wrap; }
+.acard-row { display:flex; gap:8px; margin-bottom:8px; }
+.acard-row .acard { flex:1; margin-bottom:0; }
+@media(max-width:700px){ .acard-row { flex-direction:column; } }
 
 /* risk/reward calculator */
 .rr-section { margin-top:12px; padding:12px 14px; border:0.5px solid var(--border2); border-radius:var(--radius); background:var(--bg2); }
@@ -340,6 +343,21 @@ body { font-family:'SF Mono','Fira Code','Consolas',monospace; background:var(--
 .cached-ts  { font-size:10px;color:var(--text3);flex:1; }
 .clear-cache-btn { font-family:inherit;font-size:9px;background:none;border:0.5px solid var(--border2);color:var(--text3);padding:2px 9px;border-radius:var(--radius);cursor:pointer;transition:all .15s; }
 .clear-cache-btn:hover { color:var(--red);border-color:rgba(239,68,68,.5); }
+
+/* ─── SEARCH TAB ──────────────────────────────────────────────── */
+.search-bar { display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:0.5px solid var(--border);background:var(--bg3);flex-wrap:wrap; }
+.search-ticker-input { flex:1;min-width:140px;background:var(--bg2);border:0.5px solid var(--border2);border-radius:var(--radius);color:var(--text);font-family:inherit;font-size:12px;padding:6px 10px;outline:none; }
+.search-ticker-input:focus { border-color:var(--blue); }
+.search-ticker-input::placeholder { color:var(--text3); }
+.search-go-btn { background:var(--text);color:var(--bg);border:none;border-radius:var(--radius);padding:6px 14px;font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;transition:opacity .15s;white-space:nowrap; }
+.search-go-btn:hover { opacity:.85; }
+.search-go-btn:disabled { opacity:.4;cursor:not-allowed; }
+.search-resolving { font-size:10px;color:var(--text3);font-family:-apple-system,sans-serif;white-space:nowrap; }
+.search-error-bar { padding:5px 16px;font-size:10px;color:var(--red);font-family:-apple-system,sans-serif;background:rgba(239,68,68,.06);border-bottom:0.5px solid rgba(239,68,68,.2); }
+.search-empty-state { display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:280px;gap:10px; }
+.search-empty-state .hint { font-size:11px;color:var(--text3);font-family:-apple-system,sans-serif;text-align:center;line-height:1.9; }
+.tab-x { margin-left:5px;font-size:13px;font-weight:400;opacity:.5;transition:opacity .15s,color .15s; }
+.tab-x:hover { opacity:1;color:var(--red); }
 </style>
 </head>
 <body>
@@ -349,6 +367,7 @@ body { font-family:'SF Mono','Fira Code','Consolas',monospace; background:var(--
     <button class="tab-btn active" data-ticker="TSLA" onclick="switchTab('TSLA')">TSLA</button>
     <button class="tab-btn" data-ticker="SPY" onclick="switchTab('SPY')">SPY</button>
     <button class="tab-btn" data-ticker="SCANNER" onclick="switchTab('SCANNER')">SCANNER</button>
+    <button class="tab-btn" data-ticker="SEARCH" onclick="switchTab('SEARCH')" id="search-tab-btn">⌕ SEARCH</button>
   </div>
 
   <!-- ═══════════════════ TSLA TAB ═══════════════════ -->
@@ -406,6 +425,34 @@ body { font-family:'SF Mono','Fira Code','Consolas',monospace; background:var(--
         <span class="pill">VWAP: –</span><span class="pill">50 EMA: –</span><span class="pill">BB: –</span>
       </div>
     </div>
+
+<style>
+  .inst-panel {
+    background: #0d0d0d;
+    border: 1px solid #222;
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin: 10px 0;
+    min-height: 80px;
+    font-family: 'Courier New', monospace;
+  }
+  .inst-panel table td { padding: 3px 8px 3px 0; }
+  .inst-row { display: flex; gap: 12px; flex-wrap: wrap; margin: 0 14px; }
+  .inst-row .inst-panel { flex: 1; min-width: 260px; }
+</style>
+
+<div class="inst-row">
+  <div class="inst-panel" id="gex-panel">
+    <span style="opacity:.4;font-size:12px">GAMMA EXPOSURE — loading…</span>
+  </div>
+  <div class="inst-panel" id="darkpool-panel">
+    <span style="opacity:.4;font-size:12px">DARK POOL — loading…</span>
+  </div>
+  <div class="inst-panel" id="options-flow-panel">
+    <span style="opacity:.4;font-size:12px">OPTIONS FLOW — loading…</span>
+  </div>
+</div>
+
     <div class="below-chart-row">
       <div class="bc-section">
         <div class="section-label">Trade Signal</div>
@@ -597,6 +644,24 @@ body { font-family:'SF Mono','Fira Code','Consolas',monospace; background:var(--
     </div>
   </div>
 
+  <!-- ═══════════════════ SEARCH TAB ═══════════════════ -->
+  <div class="ticker-tab" id="tab-SEARCH">
+    <div class="search-bar">
+      <span style="font-size:10px;font-weight:700;letter-spacing:1.5px;color:var(--text3);white-space:nowrap">SEARCH</span>
+      <input class="search-ticker-input" id="search-input" type="text" maxlength="40"
+        placeholder="Ticker or company name — e.g. Apple, NVDA, Tesla…"
+        autocomplete="off" spellcheck="false"
+        onkeydown="if(event.key==='Enter')doSearch()">
+      <button class="search-go-btn" id="search-go-btn" onclick="doSearch()">ANALYZE</button>
+      <span class="search-resolving" id="search-resolving" style="display:none">Searching…</span>
+    </div>
+    <div class="search-error-bar" id="search-error" style="display:none"></div>
+    <div class="search-empty-state" id="search-empty-state">
+      <div class="hint">Type any company name or ticker above and hit Enter<br>e.g. "Apple", "Nvidia", "MSFT", "META"</div>
+    </div>
+    <div id="search-stock-view" style="display:none"></div>
+  </div>
+
   <div class="disclaimer">⚠️ For informational purposes only. Not financial advice. Options trading involves significant risk. Always manage your own risk.</div>
 </div>
 
@@ -768,22 +833,26 @@ function skeletonNews(){
 
 // ── TABS ──────────────────────────────────────────────────────
 function switchTab(t){
-  if(t === activeTicker) return;
-  activeTicker = t;
+  // For SEARCH tab, the effective ticker is the searched stock (if any)
+  const effectiveT = (t === 'SEARCH' && searchedTicker) ? searchedTicker : t;
+  if(effectiveT === activeTicker && t !== 'SEARCH') return;
+  activeTicker = effectiveT;
   document.querySelectorAll('.ticker-tab').forEach(x => x.classList.remove('active'));
   document.getElementById(`tab-${t}`).classList.add('active');
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.ticker === t));
-  if(t === 'SCANNER') return; // scanner has its own state, no chart/chat needed
-  if(!state[t].chart) renderChart(t, state[t].tf);
-  // Restore Ask Claude panel state for this ticker
+  if(t === 'SCANNER') return;
+  if(t === 'SEARCH' && !searchedTicker) return; // show search home, no chart needed
+  const ticker = effectiveT;
+  if(!state[ticker] || !state[ticker].chart) renderChart(ticker, state[ticker]?.tf || '1D');
+  // Restore Ask Claude panel state
   const panel = document.getElementById('claude-panel');
   const tabBtn = document.getElementById('claude-tab-btn');
-  const isOpen = chatState[t].open;
+  const isOpen = (chatState[ticker]||{}).open || false;
   panel.classList.toggle('open', isOpen);
   tabBtn.classList.toggle('shifted', isOpen);
-  document.getElementById('cp-ticker-label').textContent = `${t} · ${t==='TSLA'?'Day Trade':'S&P 500 ETF'} Analyzer`;
-  renderChatHistory(t);
-  updateChatContextChip(t);
+  document.getElementById('cp-ticker-label').textContent = `${ticker} · ${ticker==='TSLA'?'Day Trade':ticker==='SPY'?'S&P 500 ETF':'Stock'} Analyzer`;
+  renderChatHistory(ticker);
+  updateChatContextChip(ticker);
 }
 function setTF(btn,tf,t){
   document.getElementById(`tab-${t}`).querySelectorAll('.tf-btn').forEach(b=>b.classList.remove('active'));
@@ -1054,11 +1123,14 @@ function renderAnalysisCards(t, text){
   const risks     = sec(/⚠️ KEY RISKS:\n([\s\S]*?)(?=🕐|BULL_CASE|$)/);
   const trade     = sec(/🕐 TRADE SETUP[^\n]*\n([\s\S]*?)(?=BULL_CASE|$)/);
 
+  const techCard  = technical ? `<div class="acard tech"><div class="acard-label">📊 Technical Setup</div>${technical.replace(/\n/g,'<br>')}</div>` : '';
+  const tradeCard = trade     ? `<div class="acard trade"><div class="acard-label">🕐 Trade Setup</div>${trade.replace(/\n/g,'<br>')}</div>` : '';
+  const sideBySide = (techCard || tradeCard) ? `<div class="acard-row">${techCard}${tradeCard}</div>` : '';
+
   container.innerHTML=[
-    technical ? `<div class="acard tech"><div class="acard-label">📊 Technical Setup</div>${technical.replace(/\n/g,'<br>')}</div>` : '',
+    sideBySide,
     catalyst  ? `<div class="acard catalyst"><div class="acard-label">📰 ${t==='SPY'?'Macro':'News'} Catalyst</div>${catalyst.replace(/\n/g,'<br>')}</div>` : '',
     risks     ? `<div class="acard risks"><div class="acard-label">⚠️ Key Risks</div>${risks.replace(/\n/g,'<br>')}</div>` : '',
-    trade     ? `<div class="acard trade"><div class="acard-label">🕐 Trade Setup</div>${trade.replace(/\n/g,'<br>')}</div>` : '',
     (!technical&&!catalyst&&!risks&&!trade) ? `<div class="acard raw">${text}</div>` : '',
   ].join('');
 }
@@ -1094,7 +1166,9 @@ function getSession(){
 function updateSessionBadges(){
   const session=getSession();
   const labels={pre:'Pre-Market',open:'Market Open',after:'After Hours',closed:'Market Closed'};
-  ['TSLA','SPY'].forEach(t=>{
+  const tickers=['TSLA','SPY'];
+  if(searchedTicker) tickers.push(searchedTicker);
+  tickers.forEach(t=>{
     const badge=document.getElementById(`session-badge-${t}`);
     if(!badge) return;
     badge.textContent=labels[session];
@@ -1546,10 +1620,12 @@ async function runAnalysis(t){
   const pills=el('pills',t).innerText;
 
   try{
+    const sys=ANALYSIS_SYS[t]?ANALYSIS_SYS[t](s.pos):genericAnalysisSys(t,s.pos);
+    const usr=ANALYSIS_USR[t]?ANALYSIS_USR[t](s.pos,pills):genericAnalysisUsr(t,s.pos,pills);
     const d=await claudeRequest({
       model:'claude-opus-4-7', max_tokens:1000,
-      system:ANALYSIS_SYS[t](s.pos),
-      messages:[{role:'user',content:ANALYSIS_USR[t](s.pos,pills)}]
+      system:sys,
+      messages:[{role:'user',content:usr}]
     });
     const text=d.content.map(i=>i.text||'').filter(Boolean).join('\n');
 
@@ -1916,9 +1992,9 @@ function resetChartZoom(t){
 
 // ── VOLUME HELPER FOR PM PANEL ────────────────────────────────
 function getVolStr(t){
-  const ohlc=state[t].ohlcData; if(!ohlc) return null;
+  const ohlc=state[t]?.ohlcData; if(!ohlc) return null;
   const vol=ohlc.reduce((a,b)=>a+(b.volume||0),0); if(!vol) return null;
-  const avg=AVG_VOL[t];
+  const avg=AVG_VOL[t]; if(!avg) return null;
   const pct=Math.round(vol/avg*100);
   const fmt=v=>v>=1e6?(v/1e6).toFixed(1)+'M':v>=1e3?(v/1e3).toFixed(0)+'K':'–';
   return{str:`${fmt(vol)} / ${fmt(avg)}`,cls:pct>=80?'up':pct>=50?'amb':'down',pct};
@@ -2083,6 +2159,258 @@ function clearAnalysisCache(t){
   el('news-feed',t).innerHTML='<div style="font-size:11px;color:var(--text3)">Run Full Analysis to load news.</div>';
 }
 
+// ── SEARCH TAB ────────────────────────────────────────────────
+let searchedTicker = null;
+
+function genericAnalysisSys(t, pos){
+  return `You are an expert ${t} stock day trader explaining a trade to a smart friend who is new to trading. Write everything in plain English — no jargon. If you must use a technical term, explain it in brackets. Always give a complete analysis even for WAIT. Format EXACTLY as below:
+
+🎯 SIGNAL: [CALL / PUT / WAIT]
+Confidence: [X%]
+
+📊 TECHNICAL SETUP:
+• [explain what the chart is doing in plain English — where price is, what pattern you see]
+• [what the indicators are telling us in plain words]
+• [is momentum building or fading — explain simply]
+
+📰 NEWS CATALYST:
+• [most important recent ${t} news — what happened and why it matters for the trade]
+• [secondary catalyst in plain English]
+
+⚠️ KEY RISKS:
+• [specific risk in plain English — what could go wrong and why]
+• [second risk]
+
+🕐 TRADE SETUP (${pos.toUpperCase()}):
+Entry: $X
+Target: $X (+X%)
+Stop: $X (-X%)
+Strike/Exp suggestion: [X strike, 0-1 DTE]
+
+BULL_CASE: [2-3 sentences written like texting a friend — why the stock could go up today. No jargon.]
+
+BEAR_CASE: [2-3 sentences written like texting a friend — why the stock could go down today. No jargon.]
+
+SETUP_SCORE: [single number 0-100. Score: relative volume 2x+=20pts, unusual options=20pts, 3+ indicators aligned=20pts, fresh catalyst=15pts, clean level break=15pts, IV rank<30=10pts]
+SCORE_REASON: [one plain English sentence explaining the score]`;
+}
+
+function genericAnalysisUsr(t, pos, pills){
+  return `Analyze ${t} for a ${pos.toUpperCase()} position. Date: ${new Date().toDateString()}.
+Live technicals: ${pills}
+Use your knowledge of ${t}'s fundamentals, recent news, sector trends, macro environment (Fed policy, yields, market sentiment), and current technical setup. Give a complete, actionable analysis with specific price levels.`;
+}
+
+function buildStockHTML(t){
+  return `
+    <div class="morning-brief" id="morning-brief-${t}" style="display:none">
+      <div class="morning-brief-hdr"><span class="morning-brief-lbl">Morning Brief</span><span class="morning-brief-ts" id="brief-ts-${t}"></span></div>
+      <div class="morning-brief-body" id="brief-text-${t}"></div>
+    </div>
+    <div class="header">
+      <div class="header-left">
+        <div class="ticker-badge">
+          <div class="live-dot" id="live-dot-${t}"></div>
+          <span class="ticker-label">${t}</span>
+          <span class="subtitle">Day Trade Analyzer · Powered by Claude AI</span>
+        </div>
+        <span class="session-badge" id="session-badge-${t}">–</span>
+      </div>
+      <div class="controls">
+        <button class="tf-btn active" onclick="setTF(this,'1D','${t}')">1D</button>
+        <button class="tf-btn" onclick="setTF(this,'5D','${t}')">5D</button>
+        <button class="tf-btn" onclick="setTF(this,'1M','${t}')">1M</button>
+      </div>
+    </div>
+    <div class="metrics-row">
+      <div class="metric"><div class="metric-label">Last Price</div><div class="metric-value loading" id="m-price-${t}">Loading…</div></div>
+      <div class="metric"><div class="metric-label">Day Change</div><div class="metric-value loading" id="m-change-${t}">–</div></div>
+      <div class="metric"><div class="metric-label">Volume</div><div class="metric-value loading" id="m-vol-${t}">–</div></div>
+      <div class="metric"><div class="metric-label">IV / HV</div><div class="metric-value loading" id="m-iv-${t}">–</div></div>
+    </div>
+    <div class="ext-row" id="ext-${t}">
+      <div class="ext-item"><span style="color:var(--text3)">Pre-Market:</span><span id="ext-pre-${t}">–</span></div>
+      <div class="ext-item"><span style="color:var(--text3)">After Hours:</span><span id="ext-after-${t}">–</span></div>
+    </div>
+    <div class="chart-panel">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <div class="panel-label" style="margin-bottom:0">Candlestick + VWAP</div>
+        <div style="display:flex;align-items:center">
+          <span style="font-size:9px;color:var(--text3);margin-right:6px">scroll=zoom · drag=pan · dbl-click=reset</span>
+          <button class="zoom-btn" onclick="zoomChart('in','${t}')" title="Zoom In">+</button>
+          <button class="zoom-btn" onclick="zoomChart('out','${t}')" title="Zoom Out">−</button>
+          <button class="zoom-btn" onclick="resetChartZoom('${t}')" title="Reset Zoom">↺</button>
+        </div>
+      </div>
+      <div class="chart-wrap" id="chart-wrap-${t}"></div>
+      <div class="panel-label" style="margin-top:8px">Volume profile</div>
+      <div class="vol-bars" id="volBars-${t}"></div>
+      <div class="indicators" id="pills-${t}">
+        <span class="pill">RSI: –</span><span class="pill">MACD: –</span>
+        <span class="pill">VWAP: –</span><span class="pill">50 EMA: –</span><span class="pill">BB: –</span>
+      </div>
+    </div>
+    <div class="below-chart-row">
+      <div class="bc-section">
+        <div class="section-label">Trade Signal</div>
+        <div class="signal-card">
+          <div class="signal-dir neutral" id="sig-dir-${t}">↔ Awaiting Analysis</div>
+          <div class="signal-detail" id="sig-detail-${t}">Hit Run Full Analysis to get your CALL / PUT recommendation.</div>
+          <div class="conf-bar"><div class="conf-fill neutral" id="conf-fill-${t}" style="width:0%"></div></div>
+        </div>
+        <div style="font-size:10px;color:var(--text3);margin-top:5px" id="conf-label-${t}"></div>
+      </div>
+      <div class="bc-section" style="padding:0">
+        <div class="pm-panel" id="pm-panel-${t}" style="height:100%;border-top:none;border-bottom:none">
+          <div class="section-label" style="margin-bottom:6px;color:var(--amber);letter-spacing:1.5px">Pre-Market Intelligence</div>
+          <div class="pm-header">
+            <div class="pm-mode-label closed" id="pm-label-${t}">Market Status</div>
+            <div class="pm-refresh" id="pm-refresh-${t}"></div>
+          </div>
+          <div id="pm-content-${t}"><div style="font-size:10px;color:var(--text3)">Loading market data…</div></div>
+        </div>
+      </div>
+      <div class="bc-section">
+        <div class="section-label">Live News</div>
+        <div id="news-feed-${t}"><div style="font-size:11px;color:var(--text3)">Run Full Analysis to load news.</div></div>
+      </div>
+    </div>
+    <div class="analyze-section">
+      <div class="analyze-top">
+        <span class="analyze-label">Position type:</span>
+        <div class="pos-toggle">
+          <button class="pos-btn call active" id="btn-call-${t}" onclick="setPos('call','${t}')">CALL</button>
+          <button class="pos-btn put" id="btn-put-${t}" onclick="setPos('put','${t}')">PUT</button>
+        </div>
+      </div>
+      <button class="analyze-btn" id="analyze-btn-${t}" onclick="runAnalysis('${t}')">⚡ RUN FULL AI ANALYSIS</button>
+      <div style="text-align:center;margin-top:6px"><button onclick="testConnection('${t}')" style="font-family:inherit;font-size:10px;background:none;border:0.5px solid var(--border2);color:var(--text3);padding:3px 12px;border-radius:var(--radius);cursor:pointer">🔌 Test Claude Connection</button></div>
+      <div class="cached-banner" id="cached-banner-${t}" style="display:none">
+        <span class="cached-ts" id="cached-ts-${t}"></span>
+        <span class="cached-lbl">CACHED</span>
+        <button class="clear-cache-btn" onclick="clearAnalysisCache('${t}')">Clear Cache</button>
+      </div>
+      <div class="analysis-cards" id="analysis-cards-${t}"></div>
+      <div class="rr-section" id="rr-${t}" style="display:none">
+        <div class="rr-header">Risk / Reward Calculator</div>
+        <div class="rr-inputs">
+          <label>Account $<input type="number" id="rr-acct-${t}" value="10000" min="100" oninput="calcRR('${t}')"></label>
+          <label>Risk %<input type="number" id="rr-risk-${t}" value="1" min="0.1" max="20" step="0.1" oninput="calcRR('${t}')"></label>
+        </div>
+        <div class="rr-grid" id="rr-grid-${t}"></div>
+      </div>
+      <div class="bull-bear-row" id="bull-bear-${t}">
+        <div class="bb-card bull-card"><div class="bb-label">🐂 Bulls Say</div><div class="bb-text" id="bull-text-${t}"></div></div>
+        <div class="bb-card bear-card"><div class="bb-label">🐻 Bears Say</div><div class="bb-text" id="bear-text-${t}"></div></div>
+      </div>
+    </div>`;
+}
+
+function resetSearch(){
+  if(searchedTicker && state[searchedTicker]){
+    try{ if(state[searchedTicker].chart) state[searchedTicker].chart.remove(); }catch(_){}
+    delete state[searchedTicker];
+    delete chatState[searchedTicker];
+    delete pmData[searchedTicker];
+    delete prevClose[searchedTicker];
+    delete lastPrice[searchedTicker];
+  }
+  searchedTicker=null;
+  activeTicker='SEARCH';
+  document.getElementById('search-tab-btn').innerHTML='⌕ SEARCH';
+  document.getElementById('search-stock-view').style.display='none';
+  document.getElementById('search-stock-view').innerHTML='';
+  document.getElementById('search-empty-state').style.display='flex';
+  document.getElementById('search-error').style.display='none';
+  document.getElementById('search-input').value='';
+  document.getElementById('claude-panel').classList.remove('open');
+  document.getElementById('claude-tab-btn').classList.remove('shifted');
+}
+
+async function resolveSymbol(query){
+  // Try the search API (resolves company names like "apple" → "AAPL")
+  try{
+    const r=await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+    const d=await r.json();
+    if(d.quotes&&d.quotes.length>0) return d.quotes[0].symbol.toUpperCase();
+  }catch(_){}
+  // Fallback: Finnhub symbol lookup
+  if(finnhubToken){
+    try{
+      const r=await fetch(`https://finnhub.io/api/v1/search?q=${encodeURIComponent(query)}&token=${finnhubToken}`);
+      const d=await r.json();
+      if(d.result&&d.result.length>0) return d.result[0].symbol.toUpperCase();
+    }catch(_){}
+  }
+  // Last resort: use input as-is (uppercased, stripped)
+  return query.trim().toUpperCase().replace(/[^A-Z0-9.]/g,'') || null;
+}
+
+async function doSearch(){
+  const input=document.getElementById('search-input');
+  const errEl=document.getElementById('search-error');
+  const goBtn=document.getElementById('search-go-btn');
+  const resolvingEl=document.getElementById('search-resolving');
+  const query=input.value.trim();
+  if(!query){ errEl.textContent='Please enter a ticker or company name.'; errEl.style.display='block'; return; }
+  errEl.style.display='none';
+
+  // Resolve company name → ticker symbol
+  goBtn.disabled=true; resolvingEl.style.display='inline';
+  const sym=await resolveSymbol(query);
+  goBtn.disabled=false; resolvingEl.style.display='none';
+
+  if(!sym){ errEl.textContent='Could not find that stock. Try a ticker like AAPL.'; errEl.style.display='block'; return; }
+
+  // Update input to confirmed symbol
+  input.value=sym;
+
+  // Same ticker already loaded — nothing to do
+  if(searchedTicker===sym){
+    document.getElementById('search-empty-state').style.display='none';
+    document.getElementById('search-stock-view').style.display='block';
+    return;
+  }
+
+  // Tear down previous
+  if(searchedTicker&&state[searchedTicker]){
+    try{ if(state[searchedTicker].chart) state[searchedTicker].chart.remove(); }catch(_){}
+    delete state[searchedTicker];
+    delete chatState[searchedTicker];
+    delete pmData[searchedTicker];
+    delete prevClose[searchedTicker];
+    delete lastPrice[searchedTicker];
+  }
+
+  searchedTicker=sym;
+  activeTicker=sym;
+  document.getElementById('search-tab-btn').innerHTML=`${sym} <span class="tab-x" onclick="event.stopPropagation();resetSearch()" title="Close tab">×</span>`;
+
+  // Init state for new ticker
+  state[sym]={ chart:null, candleSeries:null, ohlcData:null, vwap:0, srLevels:[], srLines:[], vwapLine:null, entryLine:null, tpLine:null, slLine:null, newsData:[], tradeLines:null, runCount:0, tf:'1D', pos:'call' };
+  chatState[sym]={ history:[], open:false };
+  pmData[sym]={ orHigh:null, orLow:null, sessionHigh:null, sessionLow:null };
+  prevClose[sym]=null; lastPrice[sym]=null;
+
+  const view=document.getElementById('search-stock-view');
+  view.innerHTML=buildStockHTML(sym);
+  document.getElementById('search-empty-state').style.display='none';
+  view.style.display='block';
+
+  updateSessionBadges();
+  updatePMPanel(sym,null);
+  if(finnhubToken){
+    try{
+      const r=await fetch(`https://finnhub.io/api/v1/quote?symbol=${sym}&token=${finnhubToken}`);
+      const q=await r.json();
+      if(q&&q.c){ prevClose[sym]=q.pc; updateLiveMetrics(sym,q.c,q.d,q.dp); updateExtRow(sym,q); updatePMPanel(sym,q); }
+    }catch(_){}
+  }
+  await renderChart(sym,'1D');
+  loadCachedAnalysis(sym);
+  updateChatContextChip(sym);
+}
+
 // ── INIT ──────────────────────────────────────────────────────
 async function init(){
   updateSessionBadges();
@@ -2105,6 +2433,135 @@ async function init(){
   if(getMarketMode()==='power') startScannerPowerHourAuto();
 }
 init();
+
+// ============================================================
+// INSTITUTIONAL INTEGRATIONS
+// Requires: api/polygon.js deployed + POLYGON_API_KEY in Vercel
+// ============================================================
+
+const POLYGON_ENDPOINT = '/api/polygon';
+
+async function polygonFetch(type, ticker = 'TSLA') {
+  const res = await fetch(`${POLYGON_ENDPOINT}?type=${type}&ticker=${ticker}`);
+  return res.json();
+}
+
+async function loadGEX(ticker = 'TSLA') {
+  const el = document.getElementById('gex-panel');
+  if (el) el.innerHTML = '<span style="opacity:.5">Loading GEX…</span>';
+  try {
+    const data = await polygonFetch('options', ticker);
+    if (!data.gex) throw new Error(data.error || 'No GEX data');
+    const { net, bias, callWall, putWall } = data.gex;
+    const color = parseFloat(net) >= 0 ? '#00ff88' : '#ff4444';
+    if (el) el.innerHTML = `
+      <div style="font-size:11px;color:#888;margin-bottom:4px">GAMMA EXPOSURE</div>
+      <div style="font-size:18px;font-weight:bold;color:${color}">${parseFloat(net) >= 0 ? '+' : ''}${Number(net).toLocaleString()}</div>
+      <div style="font-size:11px;margin-top:4px;color:#ccc">${bias}</div>
+      <div style="margin-top:8px;display:flex;gap:16px">
+        <div><div style="color:#888;font-size:10px">CALL WALL</div><div style="color:#00ff88;font-weight:bold">$${callWall ?? '—'}</div></div>
+        <div><div style="color:#888;font-size:10px">PUT WALL</div><div style="color:#ff4444;font-weight:bold">$${putWall ?? '—'}</div></div>
+      </div>`;
+  } catch (e) {
+    if (el) el.innerHTML = `<span style="color:#ff4444;font-size:11px">GEX error: ${e.message}</span>`;
+  }
+}
+
+async function loadDarkPool(ticker = 'TSLA') {
+  const el = document.getElementById('darkpool-panel');
+  if (el) el.innerHTML = '<span style="opacity:.5">Loading dark pool…</span>';
+  try {
+    const data = await polygonFetch('darkpool', ticker);
+    const { summary, darkPoolPrints } = data;
+    if (!summary) throw new Error(data.error || 'No dark pool data');
+    const rows = (darkPoolPrints || []).slice(0, 8).map(p => {
+      const time = new Date(p.participant_timestamp / 1e6).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const size = (p.size || 0).toLocaleString();
+      const notional = ((p.price || 0) * (p.size || 0) / 1e6).toFixed(2);
+      return `<tr>
+        <td style="color:#888;font-size:10px">${time}</td>
+        <td style="color:#fff">$${p.price?.toFixed(2)}</td>
+        <td style="color:#adf">${size}</td>
+        <td style="color:#fa0;font-size:10px">$${notional}M</td>
+      </tr>`;
+    }).join('');
+    if (el) el.innerHTML = `
+      <div style="font-size:11px;color:#888;margin-bottom:6px">DARK POOL PRINTS</div>
+      <div style="display:flex;gap:16px;margin-bottom:8px">
+        <div><div style="color:#888;font-size:10px">TOTAL VOL</div><div style="color:#fff;font-weight:bold">${(summary.totalDarkVolume||0).toLocaleString()}</div></div>
+        <div><div style="color:#888;font-size:10px">AVG PRICE</div><div style="color:#fff;font-weight:bold">$${summary.avgDarkPrice ?? '—'}</div></div>
+        <div><div style="color:#888;font-size:10px">LARGEST</div><div style="color:#fa0;font-weight:bold">${summary.largestPrint ? (summary.largestPrint.size||0).toLocaleString() + ' @ $' + summary.largestPrint.price : '—'}</div></div>
+      </div>
+      <table style="width:100%;border-collapse:collapse;font-size:11px">
+        <tr style="color:#555"><td>TIME</td><td>PRICE</td><td>SIZE</td><td>NOTIONAL</td></tr>
+        ${rows || '<tr><td colspan="4" style="color:#555">No prints yet today</td></tr>'}
+      </table>`;
+  } catch (e) {
+    if (el) el.innerHTML = `<span style="color:#ff4444;font-size:11px">Dark pool error: ${e.message}</span>`;
+  }
+}
+
+async function loadOptionsFlow(ticker = 'TSLA') {
+  const el = document.getElementById('options-flow-panel');
+  if (el) el.innerHTML = '<span style="opacity:.5">Scanning options flow…</span>';
+  try {
+    const data = await polygonFetch('options', ticker);
+    if (!data.gex) throw new Error(data.error || 'No options data');
+    const raw = await fetch(`${POLYGON_ENDPOINT}?type=options&ticker=${ticker}&limit=100`);
+    const rawData = await raw.json();
+    const contracts = rawData.results || [];
+    const unusual = contracts
+      .filter(c => {
+        const vol = c.day?.volume || 0;
+        const oi = c.open_interest || 1;
+        return vol / oi > 2 && vol > 500;
+      })
+      .map(c => ({
+        type: c.details?.contract_type?.toUpperCase(),
+        strike: c.details?.strike_price,
+        expiry: c.details?.expiration_date,
+        vol: c.day?.volume,
+        oi: c.open_interest,
+        ratio: (c.day?.volume / (c.open_interest || 1)).toFixed(1),
+        premium: ((c.day?.vwap || 0) * (c.day?.volume || 0) * 100 / 1e3).toFixed(0),
+      }))
+      .sort((a, b) => b.vol - a.vol)
+      .slice(0, 6);
+    const callFlow = unusual.filter(u => u.type === 'CALL').length;
+    const putFlow = unusual.filter(u => u.type === 'PUT').length;
+    const bias = callFlow > putFlow ? '🟢 BULLISH FLOW' : callFlow < putFlow ? '🔴 BEARISH FLOW' : '⚪ NEUTRAL';
+    const rows = unusual.map(u => `
+      <tr>
+        <td style="color:${u.type==='CALL'?'#00ff88':'#ff4444'};font-weight:bold">${u.type}</td>
+        <td style="color:#fff">$${u.strike}</td>
+        <td style="color:#888;font-size:10px">${u.expiry}</td>
+        <td style="color:#adf">${(u.vol||0).toLocaleString()}</td>
+        <td style="color:#fa0">${u.ratio}x</td>
+        <td style="color:#ccc;font-size:10px">$${u.premium}K</td>
+      </tr>`).join('');
+    if (el) el.innerHTML = `
+      <div style="font-size:11px;color:#888;margin-bottom:4px">UNUSUAL OPTIONS FLOW</div>
+      <div style="font-size:14px;font-weight:bold;margin-bottom:8px">${bias}</div>
+      <table style="width:100%;border-collapse:collapse;font-size:11px">
+        <tr style="color:#555"><td>TYPE</td><td>STRIKE</td><td>EXP</td><td>VOL</td><td>VOL/OI</td><td>PREM</td></tr>
+        ${rows || '<tr><td colspan="6" style="color:#555">No unusual flow detected</td></tr>'}
+      </table>`;
+  } catch (e) {
+    if (el) el.innerHTML = `<span style="color:#ff4444;font-size:11px">Flow error: ${e.message}</span>`;
+  }
+}
+
+function loadInstitutionalData(ticker = 'TSLA') {
+  loadGEX(ticker);
+  loadDarkPool(ticker);
+  loadOptionsFlow(ticker);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  loadInstitutionalData('TSLA');
+});
+
+setInterval(() => loadInstitutionalData('TSLA'), 5 * 60 * 1000);
 </script>
 </body>
 </html>
