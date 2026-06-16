@@ -1,127 +1,104 @@
 // api/polygon.js — Vercel serverless function
-// Proxies Polygon.io for: options chain, GEX, dark pool prints
-//
-// Setup: add POLYGON_API_KEY to your Vercel environment variables
-// Free key at: https://polygon.io (free tier = 15-min delayed data, 5 req/min)
-//
-// Endpoints this file handles (via ?type= param):
-//   ?type=options   → options chain snapshot (for GEX calc)
-//   ?type=darkpool  → recent dark pool / off-exchange prints
-//   ?type=quote     → real-time quote + pre/after market
+// Uses Yahoo Finance options API (free, no API key required)
+// Panels: Options Sentiment (P/C ratio, walls), Institutional OI, Unusual Flow
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  const apiKey = process.env.POLYGON_API_KEY;
-  if (!apiKey) {
-    return res.status(500).json({ error: 'POLYGON_API_KEY not configured in Vercel env vars' });
-  }
-
-  const { type = 'quote', ticker = 'TSLA', limit = 50 } = req.query;
+  const { type = 'options', ticker = 'TSLA' } = req.query;
 
   try {
-    let url;
-
-    if (type === 'options') {
-      // Options chain snapshot — used to calculate Gamma Exposure (GEX)
-      // Returns all active TSLA options contracts with Greeks
-      url = `https://api.polygon.io/v3/snapshot/options/${ticker}?limit=${limit}&apiKey=${apiKey}`;
-
-    } else if (type === 'darkpool') {
-      // Last-sale trades feed — off-exchange (dark pool) prints show up as
-      // exchange codes: D (FINRA ADF), V (IEX), etc.
-      const today = new Date().toISOString().split('T')[0];
-      url = `https://api.polygon.io/v3/trades/${ticker}?timestamp.gte=${today}&limit=200&sort=timestamp&order=desc&apiKey=${apiKey}`;
-
-    } else {
-      // Real-time quote with pre/after-market data
-      url = `https://api.polygon.io/v2/snapshot/locale/us/markets/stocks/tickers/${ticker}?apiKey=${apiKey}`;
-    }
-
-    const response = await fetch(url);
+    const url = `https://query2.finance.yahoo.com/v7/finance/options/${encodeURIComponent(ticker)}`;
+    const response = await fetch(url, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
+    });
     const data = await response.json();
 
-    if (type === 'darkpool' && data.results) {
-      // Filter for off-exchange prints (dark pools / ATS)
-      // Polygon exchange codes: 4=FINRA ADF, 36=IEX hidden, 26=MEMX dark, etc.
-      const darkPoolExchanges = new Set([4, 17, 26, 36, 62, 63, 64]);
-      const darkPrints = data.results.filter(t => darkPoolExchanges.has(t.exchange));
+    const result = data?.optionChain?.result?.[0];
+    if (!result) return res.status(200).json({ error: `No options data for ${ticker}` });
 
-      const totalVolume = darkPrints.reduce((s, t) => s + (t.size || 0), 0);
-      const largestPrint = darkPrints.reduce((max, t) => t.size > (max?.size || 0) ? t : max, null);
-      const avgPrice = darkPrints.length
-        ? (darkPrints.reduce((s, t) => s + t.price * t.size, 0) / totalVolume).toFixed(2)
-        : null;
+    const expiry = result.options?.[0];
+    const calls = expiry?.calls || [];
+    const puts  = expiry?.puts  || [];
 
-      return res.status(200).json({
-        ticker,
-        darkPoolPrints: darkPrints.slice(0, 20),
-        summary: {
-          totalDarkVolume: totalVolume,
-          printCount: darkPrints.length,
-          avgDarkPrice: avgPrice,
-          largestPrint: largestPrint ? { price: largestPrint.price, size: largestPrint.size } : null,
-        }
-      });
-    }
+    // Normalize to shared contract format
+    const mapContract = (c, contractType) => ({
+      details: {
+        contract_type: contractType,
+        strike_price: c.strike,
+        expiration_date: new Date(c.expiration * 1000).toISOString().split('T')[0],
+      },
+      day: { volume: c.volume || 0, vwap: c.lastPrice || 0 },
+      open_interest: c.openInterest || 0,
+      inTheMoney: c.inTheMoney || false,
+    });
 
-    if (type === 'options' && data.results) {
-      // Calculate Gamma Exposure (GEX)
-      // GEX = gamma × open_interest × 100 shares per contract
-      // Positive GEX → dealers stabilise price (buy dips)
-      // Negative GEX → dealers amplify moves (sell drops)
-      let totalCallGEX = 0;
-      let totalPutGEX = 0;
-      const byStrike = {};
+    const allContracts = [
+      ...calls.map(c => mapContract(c, 'call')),
+      ...puts.map(p => mapContract(p, 'put')),
+    ];
 
-      for (const contract of data.results) {
-        const d = contract.details || {};
-        const g = contract.greeks || {};
-        const gamma = g.gamma || 0;
-        const oi = contract.open_interest || 0;
-        const strike = d.strike_price;
-        const contractType = d.contract_type;
-        const gex = gamma * oi * 100;
+    // Sentiment metrics
+    const callVol  = calls.reduce((s, c) => s + (c.volume || 0), 0);
+    const putVol   = puts.reduce((s, p) => s + (p.volume || 0), 0);
+    const pcRatio  = (putVol / (callVol || 1)).toFixed(2);
+    const callHeavy = callVol >= putVol;
 
-        if (contractType === 'call') totalCallGEX += gex;
-        else totalPutGEX -= gex;
+    const callWall = calls.reduce((max, c) => (c.openInterest||0) > (max?.openInterest||0) ? c : max, null);
+    const putWall  = puts.reduce((max, p)  => (p.openInterest||0) > (max?.openInterest||0) ? p : max, null);
 
-        if (strike) {
-          if (!byStrike[strike]) byStrike[strike] = { call: 0, put: 0, net: 0 };
-          if (contractType === 'call') byStrike[strike].call += gex;
-          else byStrike[strike].put -= gex;
-          byStrike[strike].net = byStrike[strike].call + byStrike[strike].put;
-        }
-      }
-
-      const netGEX = totalCallGEX + totalPutGEX;
-      const strikes = Object.entries(byStrike).map(([k, v]) => ({ strike: +k, ...v }));
-      const callWall = strikes.reduce((max, s) => s.call > (max?.call || 0) ? s : max, null);
-      const putWall = strikes.reduce((min, s) => s.put < (min?.put || 0) ? s : min, null);
-
+    // ── type=options: sentiment + contracts for flow analysis ──
+    if (type === 'options') {
       return res.status(200).json({
         ticker,
         gex: {
-          net: netGEX.toFixed(2),
-          calls: totalCallGEX.toFixed(2),
-          puts: totalPutGEX.toFixed(2),
-          bias: netGEX > 0
-            ? 'POSITIVE — dealers stabilise price (buy dips)'
-            : 'NEGATIVE — dealers amplify moves (sell drops)',
+          net: (callVol - putVol).toFixed(0),
+          bias: callHeavy
+            ? `BULLISH — P/C ratio ${pcRatio} (calls dominate)`
+            : `BEARISH — P/C ratio ${pcRatio} (puts dominate)`,
           callWall: callWall?.strike,
           putWall: putWall?.strike,
+          pcRatio,
+          callVol,
+          putVol,
         },
-        topStrikes: strikes
-          .sort((a, b) => Math.abs(b.net) - Math.abs(a.net))
-          .slice(0, 10),
+        results: allContracts,
       });
     }
 
-    return res.status(200).json(data);
+    // ── type=darkpool: top OI contracts (institutional positioning) ──
+    if (type === 'darkpool') {
+      const topOI = [...allContracts]
+        .sort((a, b) => b.open_interest - a.open_interest)
+        .slice(0, 20);
+
+      const totalOI = allContracts.reduce((s, c) => s + c.open_interest, 0);
+      const top = topOI[0];
+
+      const prints = topOI.map(c => ({
+        contractType: c.details.contract_type.toUpperCase(),
+        strike: c.details.strike_price,
+        expiry: c.details.expiration_date,
+        oi: c.open_interest,
+        inTheMoney: c.inTheMoney,
+      }));
+
+      return res.status(200).json({
+        ticker,
+        prints,
+        summary: {
+          totalOI,
+          topStrike: top?.details?.strike_price ?? null,
+          topType: top?.details?.contract_type?.toUpperCase() ?? null,
+          topOI: top?.open_interest ?? null,
+        },
+      });
+    }
+
+    return res.status(200).json({ ticker, results: allContracts });
 
   } catch (err) {
     return res.status(500).json({ error: err.message });

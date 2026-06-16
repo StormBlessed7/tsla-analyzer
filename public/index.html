@@ -2448,56 +2448,59 @@ async function polygonFetch(type, ticker = 'TSLA') {
 
 async function loadGEX(ticker = 'TSLA') {
   const el = document.getElementById('gex-panel');
-  if (el) el.innerHTML = '<span style="opacity:.5">Loading GEX…</span>';
+  if (el) el.innerHTML = '<span style="opacity:.5">Loading options sentiment…</span>';
   try {
     const data = await polygonFetch('options', ticker);
-    if (!data.gex) throw new Error(data.error || 'No GEX data');
-    const { net, bias, callWall, putWall } = data.gex;
-    const color = parseFloat(net) >= 0 ? '#00ff88' : '#ff4444';
+    if (!data.gex) throw new Error(data.error || 'No options data');
+    const { bias, callWall, putWall, pcRatio, callVol, putVol } = data.gex;
+    const isBull = bias.startsWith('BULLISH');
+    const color = isBull ? '#00ff88' : '#ff4444';
+    const label = isBull ? 'BULLISH' : 'BEARISH';
     if (el) el.innerHTML = `
-      <div style="font-size:11px;color:#888;margin-bottom:4px">GAMMA EXPOSURE</div>
-      <div style="font-size:18px;font-weight:bold;color:${color}">${parseFloat(net) >= 0 ? '+' : ''}${Number(net).toLocaleString()}</div>
-      <div style="font-size:11px;margin-top:4px;color:#ccc">${bias}</div>
+      <div style="font-size:11px;color:#888;margin-bottom:4px">OPTIONS SENTIMENT</div>
+      <div style="font-size:18px;font-weight:bold;color:${color}">${label}</div>
+      <div style="font-size:11px;margin-top:2px;color:#aaa">P/C Ratio: <b style="color:#fff">${pcRatio}</b> &nbsp;·&nbsp; Calls: ${Number(callVol).toLocaleString()} &nbsp;·&nbsp; Puts: ${Number(putVol).toLocaleString()}</div>
       <div style="margin-top:8px;display:flex;gap:16px">
-        <div><div style="color:#888;font-size:10px">CALL WALL</div><div style="color:#00ff88;font-weight:bold">$${callWall ?? '—'}</div></div>
-        <div><div style="color:#888;font-size:10px">PUT WALL</div><div style="color:#ff4444;font-weight:bold">$${putWall ?? '—'}</div></div>
+        <div><div style="color:#888;font-size:10px">CALL WALL (resist.)</div><div style="color:#00ff88;font-weight:bold">$${callWall ?? '—'}</div></div>
+        <div><div style="color:#888;font-size:10px">PUT WALL (support)</div><div style="color:#ff4444;font-weight:bold">$${putWall ?? '—'}</div></div>
       </div>`;
   } catch (e) {
-    if (el) el.innerHTML = `<span style="color:#ff4444;font-size:11px">GEX error: ${e.message}</span>`;
+    if (el) el.innerHTML = `<span style="color:#ff4444;font-size:11px">Sentiment error: ${e.message}</span>`;
   }
 }
 
 async function loadDarkPool(ticker = 'TSLA') {
   const el = document.getElementById('darkpool-panel');
-  if (el) el.innerHTML = '<span style="opacity:.5">Loading dark pool…</span>';
+  if (el) el.innerHTML = '<span style="opacity:.5">Loading institutional positioning…</span>';
   try {
     const data = await polygonFetch('darkpool', ticker);
-    const { summary, darkPoolPrints } = data;
-    if (!summary) throw new Error(data.error || 'No dark pool data');
-    const rows = (darkPoolPrints || []).slice(0, 8).map(p => {
-      const time = new Date(p.participant_timestamp / 1e6).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      const size = (p.size || 0).toLocaleString();
-      const notional = ((p.price || 0) * (p.size || 0) / 1e6).toFixed(2);
+    const { summary, prints } = data;
+    if (!summary) throw new Error(data.error || 'No data');
+    const rows = (prints || []).slice(0, 8).map(p => {
+      const typeColor = p.contractType === 'CALL' ? '#00ff88' : '#ff4444';
+      const itm = p.inTheMoney ? '<span style="color:#fa0;font-size:9px"> ITM</span>' : '';
       return `<tr>
-        <td style="color:#888;font-size:10px">${time}</td>
-        <td style="color:#fff">$${p.price?.toFixed(2)}</td>
-        <td style="color:#adf">${size}</td>
-        <td style="color:#fa0;font-size:10px">$${notional}M</td>
+        <td style="color:${typeColor};font-weight:bold;font-size:10px">${p.contractType}${itm}</td>
+        <td style="color:#fff">$${p.strike}</td>
+        <td style="color:#888;font-size:10px">${p.expiry}</td>
+        <td style="color:#adf">${(p.oi||0).toLocaleString()}</td>
       </tr>`;
     }).join('');
+    const topLabel = summary.topType
+      ? `${summary.topType} $${summary.topStrike} · ${(summary.topOI||0).toLocaleString()} OI`
+      : '—';
     if (el) el.innerHTML = `
-      <div style="font-size:11px;color:#888;margin-bottom:6px">DARK POOL PRINTS</div>
+      <div style="font-size:11px;color:#888;margin-bottom:6px">INSTITUTIONAL OI POSITIONING</div>
       <div style="display:flex;gap:16px;margin-bottom:8px">
-        <div><div style="color:#888;font-size:10px">TOTAL VOL</div><div style="color:#fff;font-weight:bold">${(summary.totalDarkVolume||0).toLocaleString()}</div></div>
-        <div><div style="color:#888;font-size:10px">AVG PRICE</div><div style="color:#fff;font-weight:bold">$${summary.avgDarkPrice ?? '—'}</div></div>
-        <div><div style="color:#888;font-size:10px">LARGEST</div><div style="color:#fa0;font-weight:bold">${summary.largestPrint ? (summary.largestPrint.size||0).toLocaleString() + ' @ $' + summary.largestPrint.price : '—'}</div></div>
+        <div><div style="color:#888;font-size:10px">TOTAL OI</div><div style="color:#fff;font-weight:bold">${(summary.totalOI||0).toLocaleString()}</div></div>
+        <div><div style="color:#888;font-size:10px">LARGEST</div><div style="color:#fa0;font-weight:bold">${topLabel}</div></div>
       </div>
       <table style="width:100%;border-collapse:collapse;font-size:11px">
-        <tr style="color:#555"><td>TIME</td><td>PRICE</td><td>SIZE</td><td>NOTIONAL</td></tr>
-        ${rows || '<tr><td colspan="4" style="color:#555">No prints yet today</td></tr>'}
+        <tr style="color:#555"><td>TYPE</td><td>STRIKE</td><td>EXP</td><td>OI</td></tr>
+        ${rows || '<tr><td colspan="4" style="color:#555">No data</td></tr>'}
       </table>`;
   } catch (e) {
-    if (el) el.innerHTML = `<span style="color:#ff4444;font-size:11px">Dark pool error: ${e.message}</span>`;
+    if (el) el.innerHTML = `<span style="color:#ff4444;font-size:11px">OI error: ${e.message}</span>`;
   }
 }
 
@@ -2507,14 +2510,12 @@ async function loadOptionsFlow(ticker = 'TSLA') {
   try {
     const data = await polygonFetch('options', ticker);
     if (!data.gex) throw new Error(data.error || 'No options data');
-    const raw = await fetch(`${POLYGON_ENDPOINT}?type=options&ticker=${ticker}&limit=100`);
-    const rawData = await raw.json();
-    const contracts = rawData.results || [];
+    const contracts = data.results || [];
     const unusual = contracts
       .filter(c => {
         const vol = c.day?.volume || 0;
         const oi = c.open_interest || 1;
-        return vol / oi > 2 && vol > 500;
+        return vol / oi > 2 && vol > 50;
       })
       .map(c => ({
         type: c.details?.contract_type?.toUpperCase(),
